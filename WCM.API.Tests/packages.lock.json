@@ -206,6 +206,14 @@
         "resolved": "10.0.0",
         "contentHash": "MFwimSi2FH/CMGydm5EnoQFORoaArEX4QG1nijiRN05XUyJqzWwIlYT4AvnhoU1cGett/EvD416f7OnrDisbiA=="
       },
+      "Microsoft.AspNetCore.OpenApi": {
+        "type": "Transitive",
+        "resolved": "10.0.3",
+        "contentHash": "SAvSrKDgnY5GDjDAngOXxPhUvEKlTU/0zIq8zidqHvh/xnZBPs0Vc4LqwyvnmnafNnyUaivtRABz4K4wodXfSg==",
+        "dependencies": {
+          "Microsoft.OpenApi": "2.0.0"
+        }
+      },
       "Microsoft.Bcl.AsyncInterfaces": {
         "type": "Transitive",
         "resolved": "10.0.2",
@@ -710,6 +718,11 @@
           "System.IdentityModel.Tokens.Jwt": "8.15.0"
         }
       },
+      "Microsoft.OpenApi": {
+        "type": "Transitive",
+        "resolved": "2.0.0",
+        "contentHash": "GGYLfzV/G/ct80OZ45JxnWP7NvMX1BCugn/lX7TH5o0lcVaviavsLMTxmFV2AybXWjbi3h6FF1vgZiTK6PXndw=="
+      },
       "Microsoft.SourceLink.Common": {
         "type": "Transitive",
         "resolved": "10.0.103",
@@ -891,6 +904,11 @@
           "System.Threading.RateLimiting": "8.0.0"
         }
       },
+      "Scalar.AspNetCore": {
+        "type": "Transitive",
+        "resolved": "2.13.1",
+        "contentHash": "HxkQC71kWUQBdj/51GFyETO21pqmK5hfNpovAdIi4d/XEv/HIoMCNw3CGSwT0h5E8rG3CuaSm/Wz0xk7eLbu9A=="
+      },
       "System.ClientModel": {
         "type": "Transitive",
         "resolved": "1.9.0",
@@ -1013,8 +1031,11 @@
           "Azure.Extensions.AspNetCore.Configuration.Secrets": "[1.5.0, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "MediatR": "[14.1.0, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.3, )",
           "Microsoft.Identity.Web": "[4.5.0, )",
+          "Microsoft.OpenApi": "[2.0.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.0, )",
+          "Scalar.AspNetCore": "[2.13.1, )",
           "WCM.API.ServiceDefaults": "[1.0.0, )"
         }
       },

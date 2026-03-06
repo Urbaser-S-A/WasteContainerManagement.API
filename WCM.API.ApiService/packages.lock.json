@@ -41,6 +41,15 @@
           "Microsoft.IdentityModel.JsonWebTokens": "8.14.0"
         }
       },
+      "Microsoft.AspNetCore.OpenApi": {
+        "type": "Direct",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "SAvSrKDgnY5GDjDAngOXxPhUvEKlTU/0zIq8zidqHvh/xnZBPs0Vc4LqwyvnmnafNnyUaivtRABz4K4wodXfSg==",
+        "dependencies": {
+          "Microsoft.OpenApi": "2.0.0"
+        }
+      },
       "Microsoft.Identity.Web": {
         "type": "Direct",
         "requested": "[4.5.0, )",
@@ -55,6 +64,12 @@
           "Microsoft.IdentityModel.Validators": "8.15.0",
           "System.IdentityModel.Tokens.Jwt": "8.15.0"
         }
+      },
+      "Microsoft.OpenApi": {
+        "type": "Direct",
+        "requested": "[2.0.0, )",
+        "resolved": "2.0.0",
+        "contentHash": "GGYLfzV/G/ct80OZ45JxnWP7NvMX1BCugn/lX7TH5o0lcVaviavsLMTxmFV2AybXWjbi3h6FF1vgZiTK6PXndw=="
       },
       "Microsoft.SourceLink.GitHub": {
         "type": "Direct",
@@ -76,6 +91,12 @@
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.0, 11.0.0)",
           "Npgsql": "10.0.0"
         }
+      },
+      "Scalar.AspNetCore": {
+        "type": "Direct",
+        "requested": "[2.13.1, )",
+        "resolved": "2.13.1",
+        "contentHash": "HxkQC71kWUQBdj/51GFyETO21pqmK5hfNpovAdIi4d/XEv/HIoMCNw3CGSwT0h5E8rG3CuaSm/Wz0xk7eLbu9A=="
       },
       "Asp.Versioning.Abstractions": {
         "type": "Transitive",

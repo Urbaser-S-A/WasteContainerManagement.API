@@ -4,9 +4,11 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using WCM.API.ApiService.Application.Behaviors;
 using WCM.API.ApiService.Application.Interfaces;
 using WCM.API.ApiService.Infrastructure.Middleware;
+using WCM.API.ApiService.Infrastructure.OpenApi;
 using WCM.API.ApiService.Infrastructure.Persistence;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -235,6 +237,44 @@ public static class ServiceCollectionExtensions
             options.AddPolicy("NoCache", builder => builder
                 .NoCache());
         });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configures OpenAPI 3.1 generation with API versioning support and JWT Bearer authentication.
+    /// </summary>
+    public static IServiceCollection AddOpenApiWithVersioning(this IServiceCollection services)
+    {
+        services.AddEndpointsApiExplorer();
+
+        string[] knownVersions = ApiVersionConstants.KnownVersions;
+
+        foreach (string version in knownVersions)
+        {
+            services.AddOpenApi(version, options =>
+            {
+                options.AddDocumentTransformer<OpenApiInfoTransformer>();
+                options.AddDocumentTransformer<SecuritySchemeTransformer>();
+                options.AddDocumentTransformer<XmlCommentsTransformer>();
+
+                options.AddDocumentTransformer((document, context, ct) =>
+                {
+                    document.Tags = new HashSet<OpenApiTag>
+                    {
+                        new() { Name = "WasteTypes", Description = "Operations for managing waste types (organic, plastic, glass, paper, etc.)" },
+                        new() { Name = "Zones", Description = "Operations for managing collection zones and districts" },
+                        new() { Name = "Containers", Description = "Operations for managing waste containers, their locations and status" },
+                        new() { Name = "Incidents", Description = "Operations for reporting and managing container incidents" }
+                    };
+                    return Task.CompletedTask;
+                });
+            });
+        }
+
+        services.AddSingleton<OpenApiInfoTransformer>();
+        services.AddSingleton<SecuritySchemeTransformer>();
+        services.AddSingleton<XmlCommentsTransformer>();
 
         return services;
     }
