@@ -4,6 +4,7 @@ using Serilog.Events;
 using WCM.API.ApiService.Endpoints;
 using WCM.API.ApiService.Infrastructure.Extensions;
 using WCM.API.ApiService.Infrastructure.Middleware;
+using WCM.API.ApiService.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +59,14 @@ builder.Services.AddCustomResponseCompression();
 builder.Services.AddOutputCaching();
 
 var app = builder.Build();
+
+// Auto-create database schema in LocalDevelopment (EnsureCreated is idempotent)
+if (app.Environment.IsEnvironment("LocalDevelopment"))
+{
+    using IServiceScope scope = app.Services.CreateScope();
+    ApplicationDbContext dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.EnsureCreatedAsync();
+}
 
 // OpenAPI and Scalar UI - enabled in LocalDevelopment and AzureDevelopment only
 if (app.Environment.IsEnvironment("LocalDevelopment") || app.Environment.IsEnvironment("AzureDevelopment"))
