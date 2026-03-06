@@ -8,6 +8,7 @@ var wcmDatabase = postgres.AddDatabase("wcmdb");
 
 var apiService = builder.AddProject<Projects.WCM_API_ApiService>("apiservice")
     .WithReference(wcmDatabase)
-    .WaitFor(wcmDatabase);
+    .WaitFor(wcmDatabase)
+    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "LocalDevelopment");
 
 builder.Build().Run();
