@@ -153,8 +153,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
-        // Repository implementations will be registered as they are created in Feature 6-9
-        // services.AddScoped<IWasteTypeRepository, WasteTypeRepository>();
+        services.AddScoped<IWasteTypeRepository, Repositories.WasteTypeRepository>();
         // services.AddScoped<IZoneRepository, ZoneRepository>();
         // services.AddScoped<IContainerRepository, ContainerRepository>();
         // services.AddScoped<IIncidentRepository, IncidentRepository>();
