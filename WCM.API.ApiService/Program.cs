@@ -131,7 +131,7 @@ app.MapDefaultEndpoints();
 app.MapWasteTypesEndpoints();
 app.MapZonesEndpoints();
 app.MapContainersEndpoints();
-// app.MapIncidentsEndpoints();
+app.MapIncidentsEndpoints();
 
 try
 {
