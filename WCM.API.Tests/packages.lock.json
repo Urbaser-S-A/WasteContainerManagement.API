@@ -69,6 +69,17 @@
           "System.Memory.Data": "10.0.1"
         }
       },
+      "Azure.Extensions.AspNetCore.Configuration.Secrets": {
+        "type": "Transitive",
+        "resolved": "1.5.0",
+        "contentHash": "6dwMdsiW/bH4jYA8cmynQ2FclwDTERHE897NqdGRy+OROZdF9oTdz3sQIlezMoFGDg8IX8O2mPp8SbPymyuSnw==",
+        "dependencies": {
+          "Azure.Core": "1.51.1",
+          "Azure.Identity": "1.18.0",
+          "Azure.Security.KeyVault.Secrets": "4.9.0",
+          "Microsoft.Extensions.Configuration": "10.0.3"
+        }
+      },
       "Azure.Identity": {
         "type": "Transitive",
         "resolved": "1.18.0",
@@ -114,10 +125,10 @@
       },
       "Azure.Security.KeyVault.Secrets": {
         "type": "Transitive",
-        "resolved": "4.6.0",
-        "contentHash": "vwPceoznuT6glvirZcXlaCQrh1uzTSxpZUi2hRFNumHiS3hVyqIXI5fgWiLtlBzwqPJMTr0flUoSvGKjXXQlfg==",
+        "resolved": "4.9.0",
+        "contentHash": "3cQKaNCfP6QQwEoqmxShIkzCQFJ9SlCbLzIb/UH/lMhpiqjVRkF62qOUP6T7NB4fnf7RV+TxsvjWpkNddu22EA==",
         "dependencies": {
-          "Azure.Core": "1.37.0"
+          "Azure.Core": "1.51.1"
         }
       },
       "FluentValidation": {
@@ -999,6 +1010,7 @@
         "type": "Project",
         "dependencies": {
           "Asp.Versioning.Http": "[8.1.1, )",
+          "Azure.Extensions.AspNetCore.Configuration.Secrets": "[1.5.0, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "MediatR": "[14.1.0, )",
           "Microsoft.Identity.Web": "[4.5.0, )",
