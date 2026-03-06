@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "WCM.API.ApiService": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:52840;http://localhost:52841"
+    }
+  }
+}

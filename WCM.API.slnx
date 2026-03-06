@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="WCM.API.ApiService/WCM.API.ApiService.csproj" />
+  <Project Path="WCM.API.AppHost/WCM.API.AppHost.csproj" />
+  <Project Path="WCM.API.ServiceDefaults/WCM.API.ServiceDefaults.csproj" />
+  <Project Path="WCM.API.Tests/WCM.API.Tests.csproj" />
+</Solution>
