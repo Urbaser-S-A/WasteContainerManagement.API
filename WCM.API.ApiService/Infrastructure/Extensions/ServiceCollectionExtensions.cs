@@ -257,6 +257,12 @@ public static class ServiceCollectionExtensions
                 options.AddDocumentTransformer<SecuritySchemeTransformer>();
                 options.AddDocumentTransformer<XmlCommentsTransformer>();
 
+                options.AddOperationTransformer<WasteTypesExamplesTransformer>();
+                options.AddOperationTransformer<ZonesExamplesTransformer>();
+                options.AddOperationTransformer<ContainersExamplesTransformer>();
+                options.AddOperationTransformer<IncidentsExamplesTransformer>();
+                options.AddOperationTransformer<ProblemDetailsExamplesTransformer>();
+
                 options.AddDocumentTransformer((document, context, ct) =>
                 {
                     document.Tags = new HashSet<OpenApiTag>
