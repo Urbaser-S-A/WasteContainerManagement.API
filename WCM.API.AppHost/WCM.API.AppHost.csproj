@@ -12,4 +12,8 @@
     <ProjectReference Include="..\WCM.API.ApiService\WCM.API.ApiService.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
+  </ItemGroup>
+
 </Project>
