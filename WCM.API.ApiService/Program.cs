@@ -1,6 +1,7 @@
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
+using WCM.API.ApiService.Endpoints;
 using WCM.API.ApiService.Infrastructure.Extensions;
 using WCM.API.ApiService.Infrastructure.Middleware;
 
@@ -127,12 +128,10 @@ app.UseOutputCache();
 app.MapDefaultEndpoints();
 
 // 15. API endpoints (Minimal APIs)
-// Endpoint groups will be mapped here as they are created in Features 6-9
-// var apiVersionSet = app.NewVersionedApi();
-// app.MapWasteTypesEndpoints(apiVersionSet);
-// app.MapZonesEndpoints(apiVersionSet);
-// app.MapContainersEndpoints(apiVersionSet);
-// app.MapIncidentsEndpoints(apiVersionSet);
+app.MapWasteTypesEndpoints();
+// app.MapZonesEndpoints();
+// app.MapContainersEndpoints();
+// app.MapIncidentsEndpoints();
 
 try
 {
