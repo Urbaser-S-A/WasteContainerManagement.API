@@ -155,7 +155,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IWasteTypeRepository, Repositories.WasteTypeRepository>();
         services.AddScoped<IZoneRepository, Repositories.ZoneRepository>();
-        // services.AddScoped<IContainerRepository, ContainerRepository>();
+        services.AddScoped<IContainerRepository, Repositories.ContainerRepository>();
         // services.AddScoped<IIncidentRepository, IncidentRepository>();
 
         return services;

@@ -130,7 +130,7 @@ app.MapDefaultEndpoints();
 // 15. API endpoints (Minimal APIs)
 app.MapWasteTypesEndpoints();
 app.MapZonesEndpoints();
-// app.MapContainersEndpoints();
+app.MapContainersEndpoints();
 // app.MapIncidentsEndpoints();
 
 try
