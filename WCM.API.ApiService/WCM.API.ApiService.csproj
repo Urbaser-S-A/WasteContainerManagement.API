@@ -20,6 +20,16 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <!-- Exclude environment-specific appsettings from publish output (injected via K8s ConfigMaps or env vars) -->
+  <ItemGroup>
+    <Content Update="appsettings.*.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <!-- Include SQL migration scripts in publish output for automatic schema creation at startup -->
+  <ItemGroup>
+    <None Include="..\scripts\**\*.sql" Link="scripts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Http" Version="8.1.1" />
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.0" />

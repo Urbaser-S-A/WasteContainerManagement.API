@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
@@ -7,6 +8,18 @@ using WCM.API.ApiService.Infrastructure.Middleware;
 using WCM.API.ApiService.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load configuration from mounted ConfigMap volume (K8s)
+string configPath = Environment.GetEnvironmentVariable("CONFIG_PATH") ?? "";
+if (!string.IsNullOrEmpty(configPath) && Directory.Exists(configPath))
+{
+    builder.Configuration.AddJsonFile(
+        Path.Combine(configPath, "appsettings.json"), optional: true, reloadOnChange: true);
+
+    string? environmentName = builder.Environment.EnvironmentName;
+    builder.Configuration.AddJsonFile(
+        Path.Combine(configPath, $"appsettings.{environmentName}.json"), optional: true, reloadOnChange: true);
+}
 
 // Configure Serilog as the logging provider
 builder.Host.UseSerilog((context, services, loggerConfiguration) =>
@@ -60,12 +73,40 @@ builder.Services.AddOutputCaching();
 
 var app = builder.Build();
 
-// Auto-create database schema in LocalDevelopment (EnsureCreated is idempotent)
-if (app.Environment.IsEnvironment("LocalDevelopment"))
+// Auto-apply database scripts (idempotent - each script checks __EFMigrationsHistory internally)
+using (IServiceScope scope = app.Services.CreateScope())
 {
-    using IServiceScope scope = app.Services.CreateScope();
     ApplicationDbContext dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    ILogger<Program> logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    string scriptsDir = Path.Combine(AppContext.BaseDirectory, "scripts");
+
+    if (Directory.Exists(scriptsDir))
+    {
+        string[] scriptFiles = Directory.GetFiles(scriptsDir, "*.sql");
+        Array.Sort(scriptFiles, StringComparer.Ordinal);
+
+        foreach (string scriptPath in scriptFiles)
+        {
+            string fileName = Path.GetFileName(scriptPath);
+            try
+            {
+                logger.LogInformation("Executing database script {Script}...", fileName);
+                string sql = await File.ReadAllTextAsync(scriptPath);
+                await dbContext.Database.ExecuteSqlRawAsync(sql);
+                logger.LogInformation("Database script {Script} executed successfully", fileName);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to execute database script {Script}", fileName);
+                throw;
+            }
+        }
+    }
+    else
+    {
+        logger.LogWarning("Scripts directory not found at {ScriptsDir}. Skipping automatic database setup", scriptsDir);
+    }
 }
 
 // OpenAPI and Scalar UI - enabled in LocalDevelopment and AzureDevelopment only

@@ -31,10 +31,11 @@ internal sealed class IncidentsExamplesTransformer : IOpenApiOperationTransforme
 
     private static void SetExample(OpenApiOperation operation, string statusCode, JsonNode example)
     {
-        if (!operation.Responses.TryGetValue(statusCode, out IOpenApiResponse? response)
-            || response?.Content is null
-            || !response.Content.TryGetValue("application/json", out OpenApiMediaType? mediaType)
-            || mediaType is null)
+        if (operation.Responses is null
+            || !operation.Responses.TryGetValue(statusCode, out IOpenApiResponse? response)
+            || response is null
+            || response.Content is null
+            || !response.Content.TryGetValue("application/json", out OpenApiMediaType? mediaType))
         {
             return;
         }

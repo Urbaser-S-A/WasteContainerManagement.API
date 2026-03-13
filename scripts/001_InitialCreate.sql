@@ -26,7 +26,7 @@ BEGIN
     -- ========================================================================
     -- Table: WasteTypes
     -- ========================================================================
-    CREATE TABLE "WasteTypes" (
+    CREATE TABLE IF NOT EXISTS "WasteTypes" (
         "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
         "Name" varchar(100) NOT NULL,
         "Description" varchar(500) NULL,
@@ -37,7 +37,7 @@ BEGIN
         CONSTRAINT "PK_WasteTypes" PRIMARY KEY ("Id")
     );
 
-    CREATE UNIQUE INDEX "IX_WasteTypes_Name" ON "WasteTypes" ("Name");
+    CREATE UNIQUE INDEX IF NOT EXISTS "IX_WasteTypes_Name" ON "WasteTypes" ("Name");
 
     COMMENT ON TABLE "WasteTypes" IS 'Catalog of waste types (organic, paper, plastic, glass, etc.)';
     COMMENT ON COLUMN "WasteTypes"."ColorCode" IS 'Hex color code for UI representation (e.g., #00FF00)';
@@ -45,7 +45,7 @@ BEGIN
     -- ========================================================================
     -- Table: Zones
     -- ========================================================================
-    CREATE TABLE "Zones" (
+    CREATE TABLE IF NOT EXISTS "Zones" (
         "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
         "Name" varchar(150) NOT NULL,
         "District" varchar(150) NULL,
@@ -56,14 +56,14 @@ BEGIN
         CONSTRAINT "PK_Zones" PRIMARY KEY ("Id")
     );
 
-    CREATE UNIQUE INDEX "IX_Zones_Name" ON "Zones" ("Name");
+    CREATE UNIQUE INDEX IF NOT EXISTS "IX_Zones_Name" ON "Zones" ("Name");
 
     COMMENT ON TABLE "Zones" IS 'Geographic zones for container deployment';
 
     -- ========================================================================
     -- Table: Containers
     -- ========================================================================
-    CREATE TABLE "Containers" (
+    CREATE TABLE IF NOT EXISTS "Containers" (
         "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
         "Code" varchar(50) NOT NULL,
         "WasteTypeId" uuid NOT NULL,
@@ -87,10 +87,10 @@ BEGIN
         )
     );
 
-    CREATE UNIQUE INDEX "IX_Containers_Code" ON "Containers" ("Code");
-    CREATE INDEX "IX_Containers_WasteTypeId" ON "Containers" ("WasteTypeId");
-    CREATE INDEX "IX_Containers_ZoneId" ON "Containers" ("ZoneId");
-    CREATE INDEX "IX_Containers_Status" ON "Containers" ("Status");
+    CREATE UNIQUE INDEX IF NOT EXISTS "IX_Containers_Code" ON "Containers" ("Code");
+    CREATE INDEX IF NOT EXISTS "IX_Containers_WasteTypeId" ON "Containers" ("WasteTypeId");
+    CREATE INDEX IF NOT EXISTS "IX_Containers_ZoneId" ON "Containers" ("ZoneId");
+    CREATE INDEX IF NOT EXISTS "IX_Containers_Status" ON "Containers" ("Status");
 
     COMMENT ON TABLE "Containers" IS 'Physical waste containers deployed across zones';
     COMMENT ON COLUMN "Containers"."Code" IS 'Unique container identifier code (e.g., CTN-001-ORG)';
@@ -99,7 +99,7 @@ BEGIN
     -- ========================================================================
     -- Table: Incidents
     -- ========================================================================
-    CREATE TABLE "Incidents" (
+    CREATE TABLE IF NOT EXISTS "Incidents" (
         "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
         "ContainerId" uuid NOT NULL,
         "Type" varchar(30) NOT NULL,
@@ -124,10 +124,10 @@ BEGIN
         )
     );
 
-    CREATE INDEX "IX_Incidents_ContainerId" ON "Incidents" ("ContainerId");
-    CREATE INDEX "IX_Incidents_Status" ON "Incidents" ("Status");
-    CREATE INDEX "IX_Incidents_Priority" ON "Incidents" ("Priority");
-    CREATE INDEX "IX_Incidents_ReportedAt" ON "Incidents" ("ReportedAt");
+    CREATE INDEX IF NOT EXISTS "IX_Incidents_ContainerId" ON "Incidents" ("ContainerId");
+    CREATE INDEX IF NOT EXISTS "IX_Incidents_Status" ON "Incidents" ("Status");
+    CREATE INDEX IF NOT EXISTS "IX_Incidents_Priority" ON "Incidents" ("Priority");
+    CREATE INDEX IF NOT EXISTS "IX_Incidents_ReportedAt" ON "Incidents" ("ReportedAt");
 
     COMMENT ON TABLE "Incidents" IS 'Incidents reported on containers (overflow, damage, etc.)';
     COMMENT ON COLUMN "Incidents"."Type" IS 'Incident type: Overflow, Damage, Vandalism, CleaningRequired, Other';
@@ -138,7 +138,8 @@ BEGIN
     -- Record migration
     -- ========================================================================
     INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-    VALUES ('20260306000000_InitialCreate', '10.0.0');
+    VALUES ('20260306000000_InitialCreate', '10.0.0')
+    ON CONFLICT ("MigrationId") DO NOTHING;
 
     RAISE NOTICE 'Migration 20260306000000_InitialCreate applied successfully.';
 

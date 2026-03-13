@@ -16,6 +16,7 @@ var k8s = builder.AddKubernetesEnvironment("k8s")
 var postgres = builder.AddPostgres("postgres")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume("wcm-postgres-data")
+    .WithInitFiles("../scripts")
     .WithPgAdmin()
     .WithComputeEnvironment(compose);
 
