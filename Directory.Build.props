@@ -53,12 +53,14 @@
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <PublishReadyToRun>false</PublishReadyToRun>
+    <SelfContained>false</SelfContained>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Optimize>false</Optimize>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <SelfContained>false</SelfContained>
   </PropertyGroup>
 
   <!-- ============================================= -->
