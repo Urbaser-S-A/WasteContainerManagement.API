@@ -1,2 +1,21 @@
 [tools]
+azure-kubelogin = "0.2.15"
 crane = "0.21.2"
+helm = "4.1.1"
+k9s = "latest"
+kubectl = "1.35.2"
+
+[tasks."aspire:run"]
+run = "aspire run -p WCM.API.AppHost"
+alias = "ar"
+
+[tasks."aspire:publish"]
+run = "aspire publish -p WCM.API.AppHost -c Release -o ./dist"
+alias = "ap"
+
+[tasks."aspire:deploy"]
+run = "aspire deploy"
+alias = "apd"
+
+[shell_alias]
+kb = "kubelogin"
