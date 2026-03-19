@@ -58,7 +58,7 @@
   <!-- ============================================= -->
   <!-- Post-Publish Tasks (for Azure Deployments)    -->
   <!-- ============================================= -->
-  <Target Name="PostPublishTasks" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
+  <Target Name="PostPublishTasks" AfterTargets="Publish" Condition="'$(Configuration)' == 'Patata'">
     <Message Text="Post-publish: Preparing for Azure deployment..." Importance="high" />
 
     <Error Condition="!Exists('$(PublishDir)$(AssemblyName).dll')" Text="Main assembly not found in publish directory" />
