@@ -1,0 +1,80 @@
+
+WCM API has been deployed successfully!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+{{- if .Values.openchoreo.enabled }}
+
+Mode: OpenChoreo
+  Component: {{ include "wcm-api.name" . }}
+  Project: {{ .Values.openchoreo.projectName }}
+  Type: {{ .Values.openchoreo.componentType }}
+  Auto-deploy: {{ .Values.openchoreo.autoDeploy }}
+
+  Endpoints:
+  {{- range $key, $ep := .Values.openchoreo.endpoints }}
+    {{ $key }}: port {{ $ep.port }} ({{ $ep.type | default "HTTP" }}) — visibility: {{ join ", " $ep.visibility }}
+  {{- end }}
+
+  {{- if .Values.openchoreo.releaseBindings }}
+  Release bindings:
+  {{- range $env, $_ := .Values.openchoreo.releaseBindings }}
+    - {{ $env }}
+  {{- end }}
+  {{- end }}
+
+  The OpenChoreo platform controllers will generate Deployment, Service,
+  and HTTPRoute resources from the Component and Workload CRDs.
+
+{{- else }}
+
+{{- if .Values.postgresql.enabled }}
+
+PostgreSQL:
+  Host: {{ include "wcm-api.fullname" . }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local
+  Port: 5432
+  Database: {{ .Values.postgresql.auth.database }}
+  Username: {{ .Values.postgresql.auth.username | default "postgres" }}
+{{- else }}
+
+External Database:
+  Host: {{ .Values.externalDatabase.host }}
+  Port: {{ .Values.externalDatabase.port }}
+  Database: {{ .Values.externalDatabase.database }}
+  {{- if eq .Values.externalDatabase.auth.mode "workloadIdentity" }}
+  Auth: Workload Identity (passwordless)
+  {{- end }}
+{{- end }}
+
+{{- if .Values.gateway.enabled }}
+
+HTTPRoute:
+  {{- range .Values.gateway.hostnames }}
+  Hostname: {{ . }}
+  {{- end }}
+  Parent gateway:
+  {{- range .Values.gateway.parentRefs }}
+    {{ .name }}{{ with .namespace }} ({{ . }}){{ end }}
+  {{- end }}
+{{- else }}
+
+Access the API via port-forward:
+  kubectl port-forward svc/{{ include "wcm-api.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+  http://localhost:8080
+{{- end }}
+
+{{- end }}
+
+{{- if .Values.otel.enabled }}
+{{- if .Values.otel.endpoint }}
+
+OpenTelemetry:
+  Endpoint: {{ .Values.otel.endpoint }}
+  Protocol: {{ .Values.otel.protocol }}
+{{- else }}
+
+OpenTelemetry is enabled but no endpoint is configured.
+Set otel.endpoint to start exporting telemetry.
+{{- end }}
+{{- end }}

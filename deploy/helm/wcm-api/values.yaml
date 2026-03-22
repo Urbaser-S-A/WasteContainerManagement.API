@@ -1,0 +1,316 @@
+# -- Override the chart name
+nameOverride: ""
+# -- Override the full release name
+fullnameOverride: ""
+# -- Labels to add to all deployed objects
+commonLabels: {}
+
+# -- Number of replicas
+replicaCount: 1
+
+image:
+  # -- Container registry (e.g. myregistry.azurecr.io)
+  registry: ""
+  # -- Image repository
+  repository: wcm-api
+  # -- Image tag (defaults to Chart.appVersion)
+  tag: ""
+  # -- Image digest (takes precedence over tag when set)
+  digest: ""
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+
+# -- Image pull secrets for private registries
+imagePullSecrets: []
+# - name: my-registry-secret
+
+serviceAccount:
+  # -- Create a ServiceAccount
+  create: true
+  # -- Annotations to add to the ServiceAccount
+  annotations: {}
+  # -- Name of the ServiceAccount (generated if not set)
+  name: ""
+
+# -- Pod annotations
+podAnnotations: {}
+
+# -- Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port
+  port: 8080
+
+# --------------------------------------------------------------------------
+# Gateway API (HTTPRoute) — used for Kgateway, Envoy Gateway, Istio, etc.
+# --------------------------------------------------------------------------
+gateway:
+  # -- Enable HTTPRoute creation (ignored when openchoreo.enabled=true)
+  enabled: false
+  # -- Annotations on the HTTPRoute
+  annotations: {}
+  # -- Gateway parentRefs the HTTPRoute attaches to
+  parentRefs: []
+  #  - name: gateway-default
+  #    namespace: openchoreo-data-plane
+  #    sectionName: http
+  # -- Hostnames the HTTPRoute matches
+  hostnames: []
+  #  - wcm-api.example.com
+  # -- Routing rules
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+
+# -- Resource requests and limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# -- Liveness probe configuration
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# -- Readiness probe configuration
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# -- Startup probe configuration (gives the app time to start before liveness kicks in)
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  failureThreshold: 30
+
+autoscaling:
+  # -- Enable horizontal pod autoscaler
+  enabled: false
+  # -- Minimum replicas
+  minReplicas: 1
+  # -- Maximum replicas
+  maxReplicas: 5
+  # -- Target CPU utilization percentage
+  targetCPUUtilizationPercentage: 80
+  # -- Target memory utilization percentage
+  targetMemoryUtilizationPercentage: ""
+
+# -- Node selector
+nodeSelector: {}
+
+# -- Tolerations
+tolerations: []
+
+# -- Affinity rules
+affinity: {}
+
+# -- Additional environment variables (as key-value pairs)
+extraEnv: {}
+
+# -- Additional environment variables from secrets/configmaps
+extraEnvFrom: []
+
+# -- Strategy for rolling updates
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Application-specific configuration
+app:
+  # -- ASP.NET Core environment
+  environment: Production
+  # -- Forwarded headers (set true behind a reverse proxy / ingress)
+  forwardedHeaders: "true"
+  # -- Allowed hosts for Kestrel host filtering (use "*" in K8s where gateway handles host validation)
+  allowedHosts: "*"
+
+# OpenTelemetry configuration
+otel:
+  # -- Enable OTEL export
+  enabled: true
+  # -- OTLP endpoint URL
+  endpoint: ""
+  # -- OTLP protocol (grpc or http/protobuf)
+  protocol: grpc
+  # -- Service name reported to the collector
+  serviceName: wcm-api
+  # -- Experimental: emit exception log attributes
+  emitExceptionLogAttributes: "true"
+  # -- Experimental: emit event log attributes
+  emitEventLogAttributes: "true"
+  # -- Experimental: OTLP retry strategy
+  retryStrategy: "in_memory"
+
+# --------------------------------------------------------------------------
+# PostgreSQL (official image, deployed as StatefulSet)
+# --------------------------------------------------------------------------
+postgresql:
+  # -- Deploy PostgreSQL alongside the API
+  enabled: true
+  image:
+    # -- PostgreSQL image repository
+    repository: docker.io/library/postgres
+    # -- PostgreSQL image tag
+    tag: "18.3"
+    # -- PostgreSQL image digest (takes precedence over tag)
+    digest: "sha256:a9abf4275f9e99bff8e6aed712b3b7dfec9cac1341bba01c1ffdfce9ff9fc34a"
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+  auth:
+    # -- PostgreSQL username (leave empty for default 'postgres' superuser)
+    username: postgres
+    # -- PostgreSQL password (auto-generated if empty and no existingSecret)
+    password: ""
+    # -- Name of an existing secret containing the password (key: postgres-password)
+    existingSecret: ""
+    # -- Database name to create
+    database: wcmdb
+    # -- PostgreSQL host-based authentication configuration
+    authMethod: scram-sha-256
+  # -- Resource requests and limits for PostgreSQL
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    # -- Enable persistent storage
+    enabled: true
+    # -- Storage class (empty = default)
+    storageClass: ""
+    # -- PVC access mode
+    accessMode: ReadWriteOnce
+    # -- PVC size
+    size: 1Gi
+
+# --------------------------------------------------------------------------
+# External database (used when postgresql.enabled=false)
+# --------------------------------------------------------------------------
+externalDatabase:
+  # -- External database host (e.g. myserver.postgres.database.azure.com)
+  host: ""
+  # -- External database port
+  port: 5432
+  # -- External database user (for workloadIdentity this is the managed identity username, e.g. "my-identity")
+  username: postgres
+  # -- External database password (ignored when auth.mode=workloadIdentity or existingSecret is set)
+  password: ""
+  # -- External database name
+  database: wcmdb
+  # -- Name of an existing secret with the password
+  existingSecret: ""
+  # -- Key inside the existing secret
+  existingSecretPasswordKey: password
+  # -- Enable SSL for the connection (recommended for Azure PostgreSQL Flexible Server)
+  sslMode: require
+  auth:
+    # -- Authentication mode: "password" or "workloadIdentity"
+    # password:         traditional username/password auth
+    # workloadIdentity: passwordless via Azure Entra ID (Managed Identity / Workload Identity)
+    mode: password
+
+# --------------------------------------------------------------------------
+# Azure Workload Identity (used when externalDatabase.auth.mode=workloadIdentity)
+# --------------------------------------------------------------------------
+workloadIdentity:
+  # -- Client ID of the Azure Managed Identity / User-Assigned Identity
+  clientId: ""
+
+# --------------------------------------------------------------------------
+# OpenChoreo — when enabled, renders Component + Workload + ReleaseBinding
+# CRDs instead of standard K8s resources (Deployment, Service, etc.).
+# The OpenChoreo platform controllers generate those from the CRDs.
+# --------------------------------------------------------------------------
+openchoreo:
+  # -- Enable OpenChoreo mode (disables standard K8s resource rendering)
+  enabled: false
+  # -- OpenChoreo project name
+  projectName: default
+  # -- Component type (deployment/service, deployment/web-application, deployment/worker)
+  componentType: deployment/service
+  # -- Display name shown in the OpenChoreo dashboard
+  displayName: "WCM API"
+  # -- Description shown in the OpenChoreo dashboard
+  description: "Waste Container Management API"
+  # -- Auto-deploy on workload changes
+  autoDeploy: true
+  # -- Endpoint definitions exposed by the workload
+  endpoints:
+    http:
+      type: HTTP
+      port: 8080
+      # -- Base path for path-prefix routing (optional)
+      basePath: ""
+      # -- Visibility: external (internet), internal (cluster via gateway), project (namespace only)
+      visibility:
+        - external
+  # -- Inter-service dependencies (optional)
+  dependencies: []
+  #  - project: default
+  #    component: other-service
+  #    name: grpc
+  #    visibility: project
+  #    envBindings:
+  #      address: OTHER_SERVICE_ADDR
+  # -- Per-environment release bindings with resource overrides
+  releaseBindings: {}
+  #  development:
+  #    replicas: 1
+  #    resources:
+  #      requests:
+  #        cpu: 50m
+  #        memory: 128Mi
+  #      limits:
+  #        cpu: 200m
+  #        memory: 256Mi
+  #  staging:
+  #    replicas: 2
+  #  production:
+  #    replicas: 3
+  #    resources:
+  #      requests:
+  #        cpu: 200m
+  #        memory: 256Mi
+  #      limits:
+  #        cpu: "1"
+  #        memory: 1Gi

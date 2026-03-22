@@ -1,0 +1,70 @@
+{{- if .Values.openchoreo.enabled }}
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: {{ include "wcm-api.name" . }}-workload
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wcm-api.labels" . | nindent 4 }}
+spec:
+  owner:
+    componentName: {{ include "wcm-api.name" . }}
+    projectName: {{ .Values.openchoreo.projectName }}
+  endpoints:
+    {{- range $key, $ep := .Values.openchoreo.endpoints }}
+    {{ $key }}:
+      type: {{ $ep.type | default "HTTP" }}
+      port: {{ $ep.port }}
+      {{- with $ep.basePath }}
+      basePath: {{ . }}
+      {{- end }}
+      visibility:
+        {{- range $ep.visibility }}
+        - {{ . }}
+        {{- end }}
+    {{- end }}
+  container:
+    image: {{ include "wcm-api.image" . | quote }}
+    env:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: {{ .Values.app.environment | quote }}
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: {{ .Values.app.forwardedHeaders | quote }}
+      - key: AllowedHosts
+        value: {{ .Values.app.allowedHosts | quote }}
+      - key: HTTP_PORTS
+        value: "8080"
+      - key: WCMDB_HOST
+        value: {{ include "wcm-api.postgresql.host" . | quote }}
+      - key: WCMDB_PORT
+        value: {{ include "wcm-api.postgresql.port" . | quote }}
+      - key: WCMDB_USERNAME
+        value: {{ include "wcm-api.postgresql.username" . | quote }}
+      - key: WCMDB_DATABASENAME
+        value: {{ include "wcm-api.postgresql.database" . | quote }}
+      - key: ConnectionStrings__wcmdb
+        value: {{ include "wcm-api.postgresql.connectionString" . | quote }}
+      {{- if not (include "wcm-api.postgresql.isPasswordless" .) }}
+      - key: WCMDB_PASSWORD
+        value: {{ include "wcm-api.postgresql.password" . | quote }}
+      {{- end }}
+      {{- if .Values.otel.enabled }}
+      - key: OTEL_SERVICE_NAME
+        value: {{ .Values.otel.serviceName | quote }}
+      {{- with .Values.otel.endpoint }}
+      - key: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: {{ . | quote }}
+      {{- end }}
+      - key: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: {{ .Values.otel.protocol | quote }}
+      {{- end }}
+      {{- range $key, $val := .Values.extraEnv }}
+      - key: {{ $key }}
+        value: {{ $val | quote }}
+      {{- end }}
+  {{- with .Values.openchoreo.dependencies }}
+  dependencies:
+    endpoints:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+{{- end }}

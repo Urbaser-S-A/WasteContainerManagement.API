@@ -1,0 +1,33 @@
+{{- if not .Values.openchoreo.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wcm-api.fullname" . }}
+  labels:
+    {{- include "wcm-api.labels" . | nindent 4 }}
+data:
+  ASPNETCORE_ENVIRONMENT: {{ .Values.app.environment | quote }}
+  ASPNETCORE_FORWARDEDHEADERS_ENABLED: {{ .Values.app.forwardedHeaders | quote }}
+  AllowedHosts: {{ .Values.app.allowedHosts | quote }}
+  HTTP_PORTS: "8080"
+  WCMDB_HOST: {{ include "wcm-api.postgresql.host" . | quote }}
+  WCMDB_PORT: {{ include "wcm-api.postgresql.port" . | quote }}
+  WCMDB_USERNAME: {{ include "wcm-api.postgresql.username" . | quote }}
+  WCMDB_DATABASENAME: {{ include "wcm-api.postgresql.database" . | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.otel.serviceName | quote }}
+  {{- if .Values.otel.enabled }}
+  {{- with .Values.otel.endpoint }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ . | quote }}
+  {{- end }}
+  OTEL_EXPORTER_OTLP_PROTOCOL: {{ .Values.otel.protocol | quote }}
+  OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES: {{ .Values.otel.emitExceptionLogAttributes | quote }}
+  OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES: {{ .Values.otel.emitEventLogAttributes | quote }}
+  OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: {{ .Values.otel.retryStrategy | quote }}
+  {{- end }}
+  {{- if include "wcm-api.postgresql.isPasswordless" . }}
+  ConnectionStrings__wcmdb: {{ include "wcm-api.postgresql.connectionString" . | quote }}
+  {{- end }}
+  {{- range $key, $val := .Values.extraEnv }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}
+{{- end }}

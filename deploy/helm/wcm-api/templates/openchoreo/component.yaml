@@ -1,0 +1,21 @@
+{{- if .Values.openchoreo.enabled }}
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: {{ include "wcm-api.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wcm-api.labels" . | nindent 4 }}
+  annotations:
+    openchoreo.dev/display-name: {{ .Values.openchoreo.displayName | default (include "wcm-api.name" .) | quote }}
+    {{- with .Values.openchoreo.description }}
+    openchoreo.dev/description: {{ . | quote }}
+    {{- end }}
+spec:
+  owner:
+    projectName: {{ .Values.openchoreo.projectName }}
+  autoDeploy: {{ .Values.openchoreo.autoDeploy }}
+  componentType:
+    kind: ClusterComponentType
+    name: {{ .Values.openchoreo.componentType }}
+{{- end }}

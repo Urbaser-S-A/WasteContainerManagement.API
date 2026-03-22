@@ -1,0 +1,27 @@
+{{- if .Values.openchoreo.enabled }}
+{{- range $envName, $envConfig := .Values.openchoreo.releaseBindings }}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: {{ include "wcm-api.name" $ }}-{{ $envName }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "wcm-api.labels" $ | nindent 4 }}
+spec:
+  owner:
+    projectName: {{ $.Values.openchoreo.projectName }}
+    componentName: {{ include "wcm-api.name" $ }}
+  environment: {{ $envName }}
+  {{- with $envConfig }}
+  componentTypeEnvironmentConfigs:
+    {{- with .replicas }}
+    replicas: {{ . }}
+    {{- end }}
+    {{- with .resources }}
+    resources:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}

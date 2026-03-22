@@ -1,0 +1,16 @@
+apiVersion: v2
+name: wcm-api
+description: Waste Container Management API - Aspire-based .NET application
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">= 1.24.0-0"
+keywords:
+  - aspire
+  - dotnet
+  - waste-management
+  - api
+  - openchoreo
+home: https://github.com/Urbaser-S-A/WasteContainerManagement.API
+maintainers:
+  - name: aechegoyan
