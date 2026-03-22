@@ -13,7 +13,6 @@
       "command": "pnpm",
       "args": [
         "dlx",
-        "-y",
         "@playwright/mcp@latest"
       ]
     }
