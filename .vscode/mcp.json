@@ -10,8 +10,9 @@
     },
     "playwright": {
       "type": "stdio",
-      "command": "npx",
+      "command": "pnpm",
       "args": [
+        "dlx",
         "-y",
         "@playwright/mcp@latest"
       ]
