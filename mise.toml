@@ -25,16 +25,6 @@ env = { ASPNETCORE_ENVIRONMENT = "Development" }
 run = "aspire deploy"
 alias = "apd"
 
-[tasks."aspire:deploy2"]
-run = [
-    "aspire deploy",
-    { tasks = [
-        "aspire:publish",
-        "aspire:publish_production",
-    ] },
-]
-alias = "apd2"
-
 [shell_alias]
 kb = "kubelogin"
 
