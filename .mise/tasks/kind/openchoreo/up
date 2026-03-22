@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#MISE description="Create kind cluster with OpenChoreo CRDs and deploy chart"
+set -euo pipefail
+# shellcheck source=../_helpers.sh
+source "$(dirname "$0")/../_helpers.sh"
+
+CLUSTER_NAME="${CLUSTER_NAME:-wcm-oc-test}"
+KUBE_CTX="kind-${CLUSTER_NAME}"
+RELEASE_NAME="${RELEASE_NAME:-wcm}"
+
+OC_CRD_BASE="https://raw.githubusercontent.com/openchoreo/openchoreo/release-v1.0/config/crd/bases"
+OC_CRDS=(components workloads releasebindings projects environments deploymentpipelines clustercomponenttypes)
+
+# 1. Create cluster (idempotent)
+if kind get clusters 2>/dev/null | grep -qx "$CLUSTER_NAME"; then
+  _warn "Cluster '$CLUSTER_NAME' already exists — reusing"
+else
+  _info "Creating kind cluster '$CLUSTER_NAME'…"
+  kind create cluster --name "$CLUSTER_NAME" --wait 60s
+  _ok "Cluster created"
+fi
+
+# 2. Install OpenChoreo CRDs
+_info "Installing OpenChoreo CRDs (${#OC_CRDS[@]} resources)…"
+for crd in "${OC_CRDS[@]}"; do
+  kubectl apply --server-side --context "$KUBE_CTX" \
+    -f "${OC_CRD_BASE}/openchoreo.dev_${crd}.yaml" 2>/dev/null
+  _ok "openchoreo.dev/${crd}"
+done
+
+# 3. Install chart in OpenChoreo mode
+_info "Installing Helm chart (openchoreo mode)…"
+helm_args=(
+  --set openchoreo.enabled=true
+  --set postgresql.enabled=false
+  --set externalDatabase.host=mydb.postgres.database.azure.com
+  --set externalDatabase.auth.mode=workloadIdentity
+  --set externalDatabase.username=wcm-api-identity
+  --set workloadIdentity.clientId=00000000-0000-0000-0000-000000000000
+  --set image.registry=acrexample.azurecr.io
+  --set image.tag=latest
+  --set "openchoreo.releaseBindings.development.replicas=1"
+  --set "openchoreo.releaseBindings.development.resources.requests.cpu=50m"
+  --set "openchoreo.releaseBindings.development.resources.requests.memory=128Mi"
+  --set "openchoreo.releaseBindings.development.resources.limits.cpu=200m"
+  --set "openchoreo.releaseBindings.development.resources.limits.memory=256Mi"
+  --kube-context "$KUBE_CTX"
+)
+
+if helm status "$RELEASE_NAME" --kube-context "$KUBE_CTX" &>/dev/null; then
+  helm upgrade "$RELEASE_NAME" "$CHART_PATH" "${helm_args[@]}" 2>&1
+else
+  helm install "$RELEASE_NAME" "$CHART_PATH" "${helm_args[@]}" 2>&1
+fi
+_ok "Chart deployed"

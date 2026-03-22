@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#MISE description="Delete the OpenChoreo kind cluster"
+set -euo pipefail
+# shellcheck source=../_helpers.sh
+source "$(dirname "$0")/../_helpers.sh"
+
+CLUSTER_NAME="${CLUSTER_NAME:-wcm-oc-test}"
+
+_info "Deleting kind cluster '$CLUSTER_NAME'…"
+kind delete cluster --name "$CLUSTER_NAME"
+_ok "Cluster deleted"

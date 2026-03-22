@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+#MISE description="Create kind cluster, build & load images, deploy Helm chart"
+#MISE alias="ku"
+set -euo pipefail
+# shellcheck source=_helpers.sh
+source "$(dirname "$0")/_helpers.sh"
+
+CLUSTER_NAME="${CLUSTER_NAME:-wcm-test}"
+KUBE_CTX="kind-${CLUSTER_NAME}"
+RELEASE_NAME="${RELEASE_NAME:-wcm}"
+
+# 1. Create cluster (idempotent)
+if kind get clusters 2>/dev/null | grep -qx "$CLUSTER_NAME"; then
+  _warn "Cluster '$CLUSTER_NAME' already exists — reusing"
+else
+  _info "Creating kind cluster '$CLUSTER_NAME'…"
+  kind create cluster --name "$CLUSTER_NAME" --wait 60s
+  _ok "Cluster created"
+fi
+
+# 2. Build API image
+_info "Building API image ($API_IMAGE)…"
+$RUNTIME build -f "${REPO_ROOT}/WCM.API.ApiService/Containerfile.release" \
+  -t "$API_IMAGE" "$REPO_ROOT" >/dev/null 2>&1
+_ok "Image built"
+
+# 3. Resolve PostgreSQL image from values.yaml defaults or env overrides
+PG_REPO="${POSTGRES_REPO:-docker.io/library/postgres}"
+PG_TAG="${POSTGRES_TAG:-17.6}"
+PG_IMAGE="${PG_REPO}:${PG_TAG}"
+
+# 4. Load images into kind
+_info "Loading images into kind…"
+kind load docker-image "$API_IMAGE" --name "$CLUSTER_NAME" 2>/dev/null
+kind load docker-image "$PG_IMAGE" --name "$CLUSTER_NAME" 2>/dev/null
+_ok "Images loaded"
+
+# 5. Install / upgrade chart
+_info "Installing Helm chart…"
+helm_args=(
+  --set image.registry=localhost
+  --set image.pullPolicy=Never
+  --set app.environment=LocalDevelopment
+  --set postgresql.persistence.enabled=false
+  --set postgresql.auth.password=kindtest
+  --set "postgresql.image.repository=${PG_REPO}"
+  --set "postgresql.image.tag=${PG_TAG}"
+  --set "postgresql.image.digest="
+  --set postgresql.image.pullPolicy=Never
+  --set extraEnv.PGGSSENCMODE=disable
+  --kube-context "$KUBE_CTX"
+  --wait --timeout 180s
+)
+
+if helm status "$RELEASE_NAME" --kube-context "$KUBE_CTX" &>/dev/null; then
+  helm upgrade "$RELEASE_NAME" "$CHART_PATH" "${helm_args[@]}"
+else
+  helm install "$RELEASE_NAME" "$CHART_PATH" "${helm_args[@]}"
+fi
+_ok "Chart deployed"

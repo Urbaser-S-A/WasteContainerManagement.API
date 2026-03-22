@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+#MISE description="Validate OpenChoreo resources on the running cluster"
+#MISE depends=["kind:openchoreo:up"]
+set -euo pipefail
+# shellcheck source=../_helpers.sh
+source "$(dirname "$0")/../_helpers.sh"
+
+CLUSTER_NAME="${CLUSTER_NAME:-wcm-oc-test}"
+KUBE_CTX="kind-${CLUSTER_NAME}"
+RELEASE_NAME="${RELEASE_NAME:-wcm}"
+
+failed=0
+
+_assert_resource() {
+  local kind="$1" name="$2" label="$3"
+  if kubectl get "$kind" "$name" --context "$KUBE_CTX" &>/dev/null; then
+    _ok "$label exists"
+  else
+    _err "$label not found"
+    failed=1
+    return 1
+  fi
+}
+
+_assert_jsonpath() {
+  local kind="$1" name="$2" jsonpath="$3" expected="$4" label="$5"
+  local actual
+  actual="$(kubectl get "$kind" "$name" --context "$KUBE_CTX" -o jsonpath="$jsonpath" 2>/dev/null)"
+  if [[ "$actual" == "$expected" ]]; then
+    _ok "$label = $expected"
+  else
+    _err "$label: expected '$expected', got '$actual'"
+    failed=1
+  fi
+}
+
+_assert_absent() {
+  local res="$1"
+  if kubectl get "$res" --context "$KUBE_CTX" &>/dev/null 2>&1; then
+    _err "$res should NOT exist in openchoreo mode"
+    failed=1
+  else
+    _ok "$res absent (correct)"
+  fi
+}
+
+# --- No standard K8s resources ---
+_info "Checking standard K8s resources are NOT created…"
+_assert_absent "deployment/${RELEASE_NAME}-wcm-api"
+_assert_absent "service/${RELEASE_NAME}-wcm-api"
+
+# --- Component ---
+_info "Validating Component…"
+_assert_resource component wcm-api "Component wcm-api"
+_assert_jsonpath component wcm-api '{.spec.owner.projectName}' "default" "Component.spec.owner.projectName"
+_assert_jsonpath component wcm-api '{.spec.componentType.kind}' "ClusterComponentType" "Component.spec.componentType.kind"
+_assert_jsonpath component wcm-api '{.spec.componentType.name}' "deployment/service" "Component.spec.componentType.name"
+_assert_jsonpath component wcm-api '{.spec.autoDeploy}' "true" "Component.spec.autoDeploy"
+
+# --- Workload ---
+_info "Validating Workload…"
+_assert_resource workload wcm-api-workload "Workload wcm-api-workload"
+_assert_jsonpath workload wcm-api-workload '{.spec.owner.componentName}' "wcm-api" "Workload.spec.owner.componentName"
+_assert_jsonpath workload wcm-api-workload '{.spec.endpoints.http.type}' "HTTP" "Workload.spec.endpoints.http.type"
+_assert_jsonpath workload wcm-api-workload '{.spec.endpoints.http.port}' "8080" "Workload.spec.endpoints.http.port"
+_assert_jsonpath workload wcm-api-workload '{.spec.container.image}' "acrexample.azurecr.io/wcm-api:latest" "Workload.spec.container.image"
+
+# Verify passwordless auth
+env_json="$(kubectl get workload wcm-api-workload --context "$KUBE_CTX" -o jsonpath='{.spec.container.env}' 2>/dev/null)"
+if echo "$env_json" | grep -q "Authentication=Active Directory Default"; then
+  _ok "Connection string uses Active Directory Default auth"
+else
+  _err "Connection string missing Active Directory Default auth"
+  failed=1
+fi
+if echo "$env_json" | grep -q "WCMDB_PASSWORD"; then
+  _err "WCMDB_PASSWORD should NOT be set in workloadIdentity mode"
+  failed=1
+else
+  _ok "No WCMDB_PASSWORD in workloadIdentity mode"
+fi
+
+# --- ReleaseBinding ---
+_info "Validating ReleaseBinding…"
+_assert_resource releasebinding wcm-api-development "ReleaseBinding wcm-api-development"
+_assert_jsonpath releasebinding wcm-api-development '{.spec.environment}' "development" "ReleaseBinding.spec.environment"
+_assert_jsonpath releasebinding wcm-api-development '{.spec.componentTypeEnvironmentConfigs.replicas}' "1" "ReleaseBinding.replicas"
+
+# --- No Secret/ConfigMap ---
+_info "Checking no secret/configmap created…"
+_assert_absent "secret/${RELEASE_NAME}-wcm-api"
+_assert_absent "configmap/${RELEASE_NAME}-wcm-api"
+
+echo ""
+if [[ "$failed" -eq 1 ]]; then
+  _err "Some validations failed"
+  exit 1
+fi
+_ok "All OpenChoreo validations passed"

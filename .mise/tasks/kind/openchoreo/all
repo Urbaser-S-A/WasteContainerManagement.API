@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#MISE description="Test OpenChoreo mode: install CRDs, deploy chart, validate resources"
+#MISE alias="ko"
+#MISE depends=["kind:openchoreo:test"]
+set -euo pipefail
+# shellcheck source=../_helpers.sh
+source "$(dirname "$0")/../_helpers.sh"
+
+CLUSTER_NAME="${CLUSTER_NAME:-wcm-oc-test}"
+
+if [[ "${KEEP_CLUSTER:-}" != "1" ]]; then
+  mise run kind:openchoreo:down
+else
+  _warn "Cluster '$CLUSTER_NAME' kept alive (KEEP_CLUSTER=1)"
+fi
