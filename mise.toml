@@ -13,7 +13,7 @@ alias = "ar"
 
 [tasks."aspire:publish"]
 run = "aspire publish -p WCM.API.AppHost -c Release -o ./dist"
-alias = "apd"
+alias = "app"
 env = { ASPNETCORE_ENVIRONMENT = "Production" }
 
 [tasks."aspire:publish_production"]

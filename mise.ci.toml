@@ -8,7 +8,7 @@ pnpm = "10.32.1"
 
 [tasks."aspire:publish"]
 run = "aspire publish -p WCM.API.AppHost -c Release -o ./dist"
-alias = "apd"
+alias = "app"
 env = { ASPNETCORE_ENVIRONMENT = "Production" }
 
 [tasks."aspire:deploy"]
