@@ -1,4 +1,4 @@
-{{- if and .Values.postgresql.enabled (not .Values.openchoreo.enabled) }}
+{{- if .Values.postgresql.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
