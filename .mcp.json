@@ -23,10 +23,34 @@
     },
     "playwright": {
       "type": "stdio",
-      "command": "pnpm dlx",
+      "command": "pnpm",
       "args": [
-        "-y",
+        "dlx",
         "@playwright/mcp@latest"
+      ]
+    },
+    "openchoreo-cp": {
+      "type": "http",
+      "url": "https://api.urbaser.choreo.dev/mcp",
+      "oauth": {
+        "clientId": "user_mcp_client",
+        "callbackPort": 8075
+      }
+    },
+    "openchoreo-obs": {
+      "type": "http",
+      "url": "https://observer.op.urbaser.choreo.dev/mcp",
+      "oauth": {
+        "clientId": "user_mcp_client",
+        "callbackPort": 8075
+      }
+    },
+    "azure-mcp": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "tool",
+        "azmcp"
       ]
     }
   }
