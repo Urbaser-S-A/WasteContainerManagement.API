@@ -1,0 +1,12 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: urb-wcm-api
+  namespace: wcm-api
+  annotations:
+    openchoreo.dev/display-name: "URB WCM API"
+    openchoreo.dev/description: "Urbaser Waste Container Management API"
+spec:
+  deploymentPipelineRef:
+    kind: DeploymentPipeline
+    name: default

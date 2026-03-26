@@ -1,0 +1,23 @@
+---
+# Source: wcm-api/templates/openchoreo/component.yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: wcm-api
+  namespace: wcm-api
+  labels:
+    helm.sh/chart: wcm-api-0.1.0
+    app.kubernetes.io/name: wcm-api
+    app.kubernetes.io/instance: wcm-api
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    openchoreo.dev/display-name: "WCM API"
+    openchoreo.dev/description: "Waste Container Management API"
+spec:
+  owner:
+    projectName: urb-wcm-api
+  autoDeploy: true
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service

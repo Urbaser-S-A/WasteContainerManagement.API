@@ -1,0 +1,27 @@
+---
+# Source: wcm-api/templates/openchoreo/releasebinding.yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: wcm-api-development
+  namespace: wcm-api
+  labels:
+    helm.sh/chart: wcm-api-0.1.0
+    app.kubernetes.io/name: wcm-api
+    app.kubernetes.io/instance: wcm-api
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  owner:
+    projectName: urb-wcm-api
+    componentName: wcm-api
+  environment: development
+  componentTypeEnvironmentConfigs:
+    replicas: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi

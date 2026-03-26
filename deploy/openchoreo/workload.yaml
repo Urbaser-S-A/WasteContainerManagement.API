@@ -1,0 +1,50 @@
+---
+# Source: wcm-api/templates/openchoreo/workload.yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: wcm-api-workload
+  namespace: wcm-api
+  labels:
+    helm.sh/chart: wcm-api-0.1.0
+    app.kubernetes.io/name: wcm-api
+    app.kubernetes.io/instance: wcm-api
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  owner:
+    componentName: wcm-api
+    projectName: urb-wcm-api
+  endpoints:
+    http:
+      type: HTTP
+      port: 8080
+      visibility:
+        - external
+  container:
+    image: "acrurbaserocdp897.azurecr.io/wcm-api:0.1.0"
+    env:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: "Production"
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      - key: AllowedHosts
+        value: "*"
+      - key: HTTP_PORTS
+        value: "8080"
+      - key: WCMDB_HOST
+        value: "placeholder.postgres.database.azure.com"
+      - key: WCMDB_PORT
+        value: "5432"
+      - key: WCMDB_USERNAME
+        value: "wcm-api"
+      - key: WCMDB_DATABASENAME
+        value: "wcmdb"
+      - key: ConnectionStrings__wcmdb
+        value: "Host=placeholder.postgres.database.azure.com;Port=5432;Username=wcm-api;Database=wcmdb;Password=placeholder;SSL Mode=require"
+      - key: WCMDB_PASSWORD
+        value: "placeholder"
+      - key: OTEL_SERVICE_NAME
+        value: "wcm-api"
+      - key: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: "grpc"
