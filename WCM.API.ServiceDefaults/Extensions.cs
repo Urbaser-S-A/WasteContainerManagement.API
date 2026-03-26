@@ -74,7 +74,8 @@ public static class Extensions
         // 2. Environment variable: APPLICATIONINSIGHTS_CONNECTION_STRING
         // 3. Environment variable: APPLICATIONINSIGHTS_AUTHENTICATION_STRING=Authorization=AAD
         // 4. IAM role "Monitoring Metrics Publisher" assigned to Managed Identity
-        if (!builder.Environment.IsEnvironment("LocalDevelopment"))
+        if (!builder.Environment.IsEnvironment("LocalDevelopment")
+            && !string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
         {
             builder.Services.AddOpenTelemetry()
                 .UseAzureMonitor(options =>
