@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#MISE description="Show OpenChoreo resource status"
+#MISE alias="os"
+#MISE depends=["openchoreo:login"]
+set -euo pipefail
+
+echo "=== Components ==="
+occ component list 2>&1 || true
+
+echo ""
+echo "=== Workloads ==="
+occ workload list 2>&1 || true
+
+echo ""
+echo "=== Release Bindings ==="
+occ releasebinding list 2>&1 || true
+
+echo ""
+echo "=== Component Releases ==="
+occ componentrelease list 2>&1 || true

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#MISE description="Login to OpenChoreo CLI"
+#MISE alias="ol"
+set -euo pipefail
+
+echo "==> Checking current auth status..."
+if occ project list &>/dev/null; then
+  echo "Already authenticated."
+  exit 0
+fi
+
+echo "==> Token expired or missing. Starting browser login..."
+echo "    If the callback fails (ERR_CONNECTION_REFUSED in WSL2):"
+echo "    - Check VS Code Ports panel and forward the callback port"
+echo "    - Or use: occ login --client-credentials --client-id <id> --client-secret <secret>"
+echo ""
+occ login

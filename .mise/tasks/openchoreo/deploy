@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#MISE description="Render Helm templates and deploy OpenChoreo resources via occ apply"
+#MISE alias="od"
+#MISE depends=["openchoreo:login"]
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CHART_DIR="${REPO_ROOT}/deploy/helm/wcm-api"
+VALUES_FILE="${1:-${REPO_ROOT}/deploy/helm/values-openchoreo.yaml}"
+NAMESPACE="${OC_NAMESPACE:-wcm-api}"
+TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR"' EXIT
+
+echo "==> Using values file: ${VALUES_FILE}"
+echo "==> Target namespace: ${NAMESPACE}"
+
+# Render each OpenChoreo template individually (occ apply takes a single file)
+for tmpl in component workload releasebinding; do
+  echo "==> Rendering openchoreo/${tmpl}.yaml ..."
+  helm template wcm-api "${CHART_DIR}" \
+    -f "${VALUES_FILE}" \
+    --namespace "${NAMESPACE}" \
+    -s "templates/openchoreo/${tmpl}.yaml" \
+    > "${TMPDIR}/${tmpl}.yaml"
+done
+
+# Apply in dependency order: component → workload → releasebinding
+for tmpl in component workload releasebinding; do
+  # Skip empty renders (e.g. no releaseBindings defined)
+  if [ ! -s "${TMPDIR}/${tmpl}.yaml" ] || grep -q '^---$' "${TMPDIR}/${tmpl}.yaml" && [ "$(wc -l < "${TMPDIR}/${tmpl}.yaml")" -le 2 ]; then
+    echo "--- Skipping ${tmpl} (empty render)"
+    continue
+  fi
+  echo "==> Applying ${tmpl}..."
+  occ apply -f "${TMPDIR}/${tmpl}.yaml"
+done
+
+echo ""
+echo "==> Deployment complete. Run 'mise run openchoreo:status' to check resources."

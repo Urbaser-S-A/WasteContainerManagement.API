@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#MISE description="Delete WCM API OpenChoreo resources"
+#MISE alias="ot"
+#MISE depends=["openchoreo:login"]
+set -euo pipefail
+
+COMPONENT_NAME="${1:-wcm-api}"
+
+echo "==> Deleting component '${COMPONENT_NAME}' (cascades to workload + release bindings)..."
+
+# Delete in reverse order to be safe
+echo "--- Deleting release bindings..."
+occ releasebinding delete "${COMPONENT_NAME}-development" 2>/dev/null || true
+
+echo "--- Deleting workload..."
+occ workload delete "${COMPONENT_NAME}-workload" 2>/dev/null || true
+
+echo "--- Deleting component..."
+occ component delete "${COMPONENT_NAME}" 2>/dev/null || true
+
+echo ""
+echo "==> Teardown complete."

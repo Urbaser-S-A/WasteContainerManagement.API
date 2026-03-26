@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+#MISE description="Build container image and push to ACR"
+#MISE alias="ob"
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+REGISTRY="${ACR_REGISTRY:-acrurbaserocdp897.azurecr.io}"
+IMAGE_NAME="${IMAGE_NAME:-wcm-api}"
+IMAGE_TAG="${IMAGE_TAG:-0.1.0}"
+FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+echo "==> Logging in to ACR: ${REGISTRY}..."
+az acr login --name "${REGISTRY%%.*}" 2>/dev/null || {
+  echo "    az acr login failed. Trying crane auth..."
+  crane auth login "${REGISTRY}" -u "00000000-0000-0000-0000-000000000000" -p "$(az acr login --name "${REGISTRY%%.*}" --expose-token -o tsv --query accessToken)"
+}
+
+echo "==> Building image: ${FULL_IMAGE}"
+docker build \
+  -f "${REPO_ROOT}/WCM.API.ApiService/Containerfile.release" \
+  -t "${FULL_IMAGE}" \
+  "${REPO_ROOT}"
+
+echo "==> Pushing image: ${FULL_IMAGE}"
+docker push "${FULL_IMAGE}"
+
+echo ""
+echo "==> Image pushed successfully: ${FULL_IMAGE}"
