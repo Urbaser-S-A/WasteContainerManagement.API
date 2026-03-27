@@ -4,9 +4,10 @@
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-REGISTRY="${ACR_REGISTRY:-acrurbaserocdp897.azurecr.io}"
-IMAGE_NAME="${IMAGE_NAME:-wcm-api}"
-IMAGE_TAG="${IMAGE_TAG:-0.1.0}"
+VALUES_FILE="${REPO_ROOT}/deploy/helm/values-openchoreo.yaml"
+REGISTRY="${ACR_REGISTRY:-$(grep 'registry:' "$VALUES_FILE" | awk '{print $2}')}"
+IMAGE_NAME="${IMAGE_NAME:-$(grep 'repository:' "$VALUES_FILE" | awk '{print $2}')}"
+IMAGE_TAG="${IMAGE_TAG:-$(grep 'tag:' "$VALUES_FILE" | head -1 | awk '{print $2}' | tr -d '"')}"
 FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
 echo "==> Logging in to ACR: ${REGISTRY}..."

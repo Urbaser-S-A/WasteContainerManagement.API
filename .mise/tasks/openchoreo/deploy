@@ -7,7 +7,7 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 CHART_DIR="${REPO_ROOT}/deploy/helm/wcm-api"
 VALUES_FILE="${1:-${REPO_ROOT}/deploy/helm/values-openchoreo.yaml}"
-NAMESPACE="${OC_NAMESPACE:-wcm-api}"
+NAMESPACE="${OC_NAMESPACE:-default}"
 TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
