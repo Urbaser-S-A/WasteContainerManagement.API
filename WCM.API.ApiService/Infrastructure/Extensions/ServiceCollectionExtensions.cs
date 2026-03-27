@@ -1,10 +1,13 @@
 using Asp.Versioning;
+using Azure.Core;
+using Azure.Identity;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using Npgsql;
 using WCM.API.ApiService.Application.Behaviors;
 using WCM.API.ApiService.Application.Interfaces;
 using WCM.API.ApiService.Infrastructure.Middleware;
@@ -92,33 +95,62 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration,
         IWebHostEnvironment environment)
     {
-        services.AddDbContext<ApplicationDbContext>(options =>
+        string? connectionString = configuration.GetConnectionString("wcmdb");
+        bool useWorkloadIdentity = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_CLIENT_ID"));
+
+        if (useWorkloadIdentity)
         {
-            string? connectionString = configuration.GetConnectionString("wcmdb");
-
-            options.UseNpgsql(connectionString, npgsqlOptions =>
+            var credential = new DefaultAzureCredential();
+            var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+            dataSourceBuilder.UsePeriodicPasswordProvider(async (_, ct) =>
             {
-                npgsqlOptions.CommandTimeout(30);
+                var token = await credential.GetTokenAsync(
+                    new TokenRequestContext(["https://ossrdbms-aad.database.windows.net/.default"]), ct);
+                return token.Token;
+            }, TimeSpan.FromMinutes(55), TimeSpan.FromSeconds(0));
 
-                npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
+            var dataSource = dataSourceBuilder.Build();
+            services.AddSingleton(dataSource);
 
-                npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+            services.AddDbContext<ApplicationDbContext>((sp, options) =>
+            {
+                options.UseNpgsql(sp.GetRequiredService<NpgsqlDataSource>(), npgsqlOptions =>
+                {
+                    npgsqlOptions.CommandTimeout(30);
+                    npgsqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        errorCodesToAdd: null);
+                    npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                });
+
+                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             });
-
-            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-
-            bool isLocalDevelopment = environment.IsEnvironment("LocalDevelopment");
-
-            if (isLocalDevelopment)
+        }
+        else
+        {
+            services.AddDbContext<ApplicationDbContext>(options =>
             {
-                options.EnableSensitiveDataLogging();
-                options.EnableDetailedErrors();
-                options.LogTo(Console.WriteLine, LogLevel.Information);
-            }
-        });
+                options.UseNpgsql(connectionString, npgsqlOptions =>
+                {
+                    npgsqlOptions.CommandTimeout(30);
+                    npgsqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        errorCodesToAdd: null);
+                    npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                });
+
+                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+
+                if (environment.IsEnvironment("LocalDevelopment"))
+                {
+                    options.EnableSensitiveDataLogging();
+                    options.EnableDetailedErrors();
+                    options.LogTo(Console.WriteLine, LogLevel.Information);
+                }
+            });
+        }
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
