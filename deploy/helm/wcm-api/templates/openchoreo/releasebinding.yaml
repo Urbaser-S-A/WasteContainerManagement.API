@@ -22,6 +22,11 @@ spec:
     resources:
       {{- toYaml . | nindent 6 }}
     {{- end }}
+    {{- with $.Values.workloadIdentity }}
+    {{- with .clientId }}
+    azureWorkloadIdentityClientId: {{ . | quote }}
+    {{- end }}
+    {{- end }}
   {{- end }}
 {{- end }}
 {{- end }}

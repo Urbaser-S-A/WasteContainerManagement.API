@@ -168,13 +168,11 @@ When postgresql.enabled and no password is set, looks up the existing secret fir
 
 {{/*
 Return the full PostgreSQL connection string.
-For workload identity: uses "Authentication=Active Directory Default" (Npgsql Azure AD integration).
+For workload identity: token auth is handled in-app via NpgsqlDataSourceBuilder.UsePeriodicPasswordProvider.
 */}}
 {{- define "wcm-api.postgresql.connectionString" -}}
 Host={{ include "wcm-api.postgresql.host" . }};Port={{ include "wcm-api.postgresql.port" . }};Username={{ include "wcm-api.postgresql.username" . }};Database={{ include "wcm-api.postgresql.database" . }}
-{{- if include "wcm-api.postgresql.isPasswordless" . -}}
-;Authentication=Active Directory Default
-{{- else -}}
+{{- if not (include "wcm-api.postgresql.isPasswordless" .) -}}
 ;Password={{ include "wcm-api.postgresql.password" . }}
 {{- end -}}
 {{- if not .Values.postgresql.enabled }}
