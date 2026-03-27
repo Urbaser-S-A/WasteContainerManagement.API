@@ -8,6 +8,13 @@
         "aspire"
       ],
       "rollForward": false
+    },
+    "azure.mcp": {
+      "version": "1.0.4",
+      "commands": [
+        "azmcp"
+      ],
+      "rollForward": false
     }
   }
 }
