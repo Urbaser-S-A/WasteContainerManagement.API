@@ -1,0 +1,20 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: wcm-api-dockerfile-development
+  namespace: default
+spec:
+  owner:
+    projectName: urb-wcm-api
+    componentName: wcm-api-dockerfile
+  environment: development
+  componentTypeEnvironmentConfigs:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    azureWorkloadIdentityClientId: "fda04deb-cc9a-4918-813d-aad0ff6073b6"

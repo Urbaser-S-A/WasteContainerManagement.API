@@ -1,0 +1,28 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: wcm-api-dockerfile
+  namespace: default
+  annotations:
+    openchoreo.dev/display-name: "WCM API (Dockerfile)"
+    openchoreo.dev/description: "Source build using Containerfile.release"
+spec:
+  owner:
+    projectName: urb-wcm-api
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service-subdomain
+  autoDeploy: true
+  workflow:
+    kind: ClusterWorkflow
+    name: dockerfile-builder
+    parameters:
+      repository:
+        url: "https://github.com/Urbaser-S-A/WasteContainerManagement.API"
+        revision:
+          branch: "main"
+        appPath: "/"
+        secretRef: github-wcm-api
+      docker:
+        context: "/"
+        filePath: "/WCM.API.ApiService/Containerfile.release"
