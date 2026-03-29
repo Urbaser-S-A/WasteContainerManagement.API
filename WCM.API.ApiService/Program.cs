@@ -80,8 +80,13 @@ using (IServiceScope scope = app.Services.CreateScope())
     ILogger<Program> logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
     string scriptsDir = Path.Combine(AppContext.BaseDirectory, "scripts");
+    bool useWorkloadIdentity = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_CLIENT_ID"));
 
-    if (Directory.Exists(scriptsDir))
+    if (useWorkloadIdentity)
+    {
+        logger.LogInformation("Workload identity detected. Skipping automatic database scripts (managed DB)");
+    }
+    else if (Directory.Exists(scriptsDir))
     {
         string[] scriptFiles = Directory.GetFiles(scriptsDir, "*.sql");
         Array.Sort(scriptFiles, StringComparer.Ordinal);
