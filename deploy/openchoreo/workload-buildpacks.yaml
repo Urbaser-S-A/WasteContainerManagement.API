@@ -1,0 +1,32 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: wcm-api-buildpacks-workload
+  namespace: default
+spec:
+  owner:
+    componentName: wcm-api-buildpacks
+    projectName: urb-wcm-api
+  endpoints:
+    http:
+      type: HTTP
+      port: 8080
+      visibility:
+        - external
+  container:
+    image: acrurbaserocdp897.azurecr.io/default-urb-wcm-api-wcm-api-buildpacks:v1-518a4962
+    env:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: "LocalDevelopment"
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      - key: AllowedHosts
+        value: "*"
+      - key: HTTP_PORTS
+        value: "8080"
+      - key: ConnectionStrings__wcmdb
+        value: "Host=pg-opench.postgres.database.azure.com;Port=5432;Username=wcm-api-identity;Database=wcmdb;SSL Mode=require"
+      - key: AZURE_CLIENT_ID
+        value: "fda04deb-cc9a-4918-813d-aad0ff6073b6"
+      - key: PGGSSENCMODE
+        value: "disable"
