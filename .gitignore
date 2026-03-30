@@ -58,6 +58,7 @@ secrets.json
 
 # IA Agents
 CLAUDE.local.md
+.claude
 
 # Mise local env
 mise.local.toml
