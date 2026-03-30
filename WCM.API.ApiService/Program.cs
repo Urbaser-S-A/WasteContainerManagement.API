@@ -22,18 +22,15 @@ if (!string.IsNullOrEmpty(configPath) && Directory.Exists(configPath))
 }
 
 // Configure Serilog as the logging provider
+// writeToProviders: true ensures Serilog forwards log events to other registered ILoggerProviders
+// (OpenTelemetry provider from ServiceDefaults), enabling structured logs in the Aspire Dashboard via OTLP
 builder.Host.UseSerilog((context, services, loggerConfiguration) =>
 {
     loggerConfiguration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .Enrich.WithMachineName()
-        .Enrich.WithEnvironmentName()
-        .Enrich.WithThreadId()
-        .WriteTo.Console(
-            outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}");
-});
+        .Enrich.WithThreadId();
+}, writeToProviders: true);
 
 // Load secrets.json if it exists (local development only)
 builder.Configuration.AddUserSecrets<Program>(optional: true);
