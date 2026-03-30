@@ -25,47 +25,94 @@ public static class IncidentsEndpoints
         group.MapGet("/", GetIncidents)
             .WithName("GetIncidents")
             .WithSummary("Retrieves incidents with pagination and optional filters")
+            .WithDescription("""
+                Returns a paginated list of incidents with their associated container information.
+                Supports complex filtering by multiple criteria.
+
+                **Optional parameters:**
+                - `containerId` (query): Filter by container GUID
+                - `type` (query): Filter by incident type (`Overflow`, `Damage`, `Vandalism`, `CleaningRequired`, `Other`)
+                - `status` (query): Filter by incident status (`Open`, `InProgress`, `Resolved`, `Closed`)
+                - `priority` (query): Filter by priority (`Low`, `Medium`, `High`, `Critical`)
+                - `fromDate` (query): Filter incidents reported on or after this date
+                - `toDate` (query): Filter incidents reported on or before this date
+                - `page` (query): Page number (default: 1)
+                - `pageSize` (query): Items per page, 1-100 (default: 20)
+                """)
             .Produces<IncidentListResponse>(StatusCodes.Status200OK)
             .Produces<ValidationProblemDetails>(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapGet("/{id:guid}", GetIncidentById)
             .WithName("GetIncidentById")
             .WithSummary("Retrieves an incident by its ID")
+            .WithDescription("""
+                Returns a single incident with its associated container code.
+
+                **Required parameters:**
+                - `id` (route): The incident unique identifier
+                """)
             .Produces<IncidentDto>(StatusCodes.Status200OK)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/", CreateIncident)
             .WithName("CreateIncident")
             .WithSummary("Creates a new incident for a container")
+            .WithDescription("""
+                Reports a new incident on a container. The container must exist and be in Active status.
+
+                **Required fields:** `containerId`, `type`, `priority`
+                **Optional fields:** `description`
+
+                **Incident types:** `Overflow`, `Damage`, `Vandalism`, `CleaningRequired`, `Other`
+                **Priority levels:** `Low`, `Medium`, `High`, `Critical`
+                """)
             .Produces<IncidentDto>(StatusCodes.Status201Created)
             .Produces<ValidationProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapPut("/{id:guid}", UpdateIncident)
             .WithName("UpdateIncident")
             .WithSummary("Updates an existing incident")
+            .WithDescription("""
+                Updates an incident's properties. Resolved or closed incidents cannot be reopened.
+                When transitioning to `Resolved` status, `resolvedAt` is automatically set if not provided.
+
+                **Required parameters:**
+                - `id` (route): The incident unique identifier
+                """)
             .Produces(StatusCodes.Status204NoContent)
             .Produces<ValidationProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
             .Produces<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)
-            .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapDelete("/{id:guid}", DeleteIncident)
             .WithName("DeleteIncident")
             .WithSummary("Deletes an incident")
+            .WithDescription("""
+                Deletes an incident record permanently.
+
+                **Required parameters:**
+                - `id` (route): The incident unique identifier
+                """)
             .Produces(StatusCodes.Status204NoContent)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         return group;
     }

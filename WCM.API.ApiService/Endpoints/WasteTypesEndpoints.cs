@@ -24,47 +24,85 @@ public static class WasteTypesEndpoints
         group.MapGet("/", GetWasteTypes)
             .WithName("GetWasteTypes")
             .WithSummary("Retrieves all waste types with optional active filter")
+            .WithDescription("""
+                Returns a list of waste types used to classify containers.
+
+                **Optional parameters:**
+                - `isActive` (query): Filter by active/inactive status
+                """)
             .Produces<IReadOnlyList<WasteTypeDto>>(StatusCodes.Status200OK)
-            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapGet("/{id:guid}", GetWasteTypeById)
             .WithName("GetWasteTypeById")
             .WithSummary("Retrieves a waste type by its ID")
+            .WithDescription("""
+                Returns a single waste type identified by its GUID.
+
+                **Required parameters:**
+                - `id` (route): The waste type unique identifier
+                """)
             .Produces<WasteTypeDto>(StatusCodes.Status200OK)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/", CreateWasteType)
             .WithName("CreateWasteType")
             .WithSummary("Creates a new waste type")
+            .WithDescription("""
+                Creates a new waste type for container classification.
+                The name must be unique across all waste types.
+
+                **Required fields:** `name`
+                **Optional fields:** `description`, `colorCode` (hex format), `isActive`
+                """)
             .Produces<WasteTypeDto>(StatusCodes.Status201Created)
             .Produces<ValidationProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapPut("/{id:guid}", UpdateWasteType)
             .WithName("UpdateWasteType")
             .WithSummary("Updates an existing waste type")
+            .WithDescription("""
+                Updates the properties of an existing waste type.
+                The name must remain unique across all waste types.
+
+                **Required parameters:**
+                - `id` (route): The waste type unique identifier
+                """)
             .Produces(StatusCodes.Status204NoContent)
             .Produces<ValidationProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
             .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
-            .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapDelete("/{id:guid}", DeleteWasteType)
             .WithName("DeleteWasteType")
             .WithSummary("Deletes a waste type if it has no active containers")
+            .WithDescription("""
+                Deletes a waste type. The operation will be rejected if the waste type
+                is currently assigned to any active containers.
+
+                **Required parameters:**
+                - `id` (route): The waste type unique identifier
+                """)
             .Produces(StatusCodes.Status204NoContent)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
             .Produces<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)
-            .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         return group;
     }

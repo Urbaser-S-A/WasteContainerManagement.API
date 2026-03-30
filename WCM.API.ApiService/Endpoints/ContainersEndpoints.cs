@@ -25,48 +25,90 @@ public static class ContainersEndpoints
         group.MapGet("/", GetContainers)
             .WithName("GetContainers")
             .WithSummary("Retrieves containers with pagination and optional filters")
+            .WithDescription("""
+                Returns a paginated list of waste containers with their associated waste type and zone.
+
+                **Optional parameters:**
+                - `zoneId` (query): Filter by zone GUID
+                - `wasteTypeId` (query): Filter by waste type GUID
+                - `status` (query): Filter by container status (`Active`, `Inactive`, `Maintenance`, `Full`)
+                - `page` (query): Page number (default: 1)
+                - `pageSize` (query): Items per page, 1-100 (default: 20)
+                """)
             .Produces<ContainerListResponse>(StatusCodes.Status200OK)
             .Produces<ValidationProblemDetails>(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapGet("/{id:guid}", GetContainerById)
             .WithName("GetContainerById")
             .WithSummary("Retrieves a container by its ID")
+            .WithDescription("""
+                Returns a single container with its associated waste type and zone information.
+
+                **Required parameters:**
+                - `id` (route): The container unique identifier
+                """)
             .Produces<ContainerDto>(StatusCodes.Status200OK)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/", CreateContainer)
             .WithName("CreateContainer")
             .WithSummary("Creates a new container")
+            .WithDescription("""
+                Creates a new waste container assigned to a zone and waste type.
+                The container code must be unique across all containers.
+
+                **Required fields:** `code`, `wasteTypeId`, `zoneId`, `latitude`, `longitude`, `capacityLiters`, `status`
+                **Optional fields:** `address`, `installationDate`
+                """)
             .Produces<ContainerDto>(StatusCodes.Status201Created)
             .Produces<ValidationProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
             .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapPut("/{id:guid}", UpdateContainer)
             .WithName("UpdateContainer")
             .WithSummary("Updates an existing container")
+            .WithDescription("""
+                Updates the properties of an existing container.
+                The container code must remain unique across all containers.
+
+                **Required parameters:**
+                - `id` (route): The container unique identifier
+                """)
             .Produces(StatusCodes.Status204NoContent)
             .Produces<ValidationProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
             .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
-            .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapDelete("/{id:guid}", DeleteContainer)
             .WithName("DeleteContainer")
             .WithSummary("Deletes a container if it has no open incidents")
+            .WithDescription("""
+                Deletes a container. The operation will be rejected if the container
+                has any open or in-progress incidents associated with it.
+
+                **Required parameters:**
+                - `id` (route): The container unique identifier
+                """)
             .Produces(StatusCodes.Status204NoContent)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
             .Produces<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)
-            .Produces(StatusCodes.Status401Unauthorized)
-            .Produces(StatusCodes.Status429TooManyRequests);
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         return group;
     }
