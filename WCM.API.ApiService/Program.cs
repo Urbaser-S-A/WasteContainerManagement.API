@@ -164,7 +164,10 @@ app.UseHttpsRedirection();
 // 6. Response compression
 app.UseResponseCompression();
 
-// 7. Rate limiter
+// 7. Output cache (before rate limiter: cached responses don't count against rate limits)
+app.UseOutputCache();
+
+// 8. Rate limiter
 app.UseRateLimiter();
 
 // 9. Authentication
@@ -172,9 +175,6 @@ app.UseAuthentication();
 
 // 10. Authorization
 app.UseAuthorization();
-
-// 12. Output cache
-app.UseOutputCache();
 
 // 14. Health check endpoints (Aspire)
 app.MapDefaultEndpoints();
