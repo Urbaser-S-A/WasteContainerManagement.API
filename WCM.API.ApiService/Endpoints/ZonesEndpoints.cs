@@ -1,3 +1,4 @@
+using Asp.Versioning.Builder;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using WCM.API.ApiService.Application.Zones.CreateZone;
@@ -12,10 +13,11 @@ namespace WCM.API.ApiService.Endpoints;
 
 public static class ZonesEndpoints
 {
-    public static IEndpointRouteBuilder MapZonesEndpoints(this IEndpointRouteBuilder app)
+    public static RouteGroupBuilder MapZonesEndpoints(this IEndpointRouteBuilder app, ApiVersionSet apiVersionSet)
     {
         RouteGroupBuilder group = app
-            .MapGroup("api/v1/zones")
+            .MapGroup("api/v{version:apiVersion}/zones")
+            .WithApiVersionSet(apiVersionSet)
             .WithTags("Zones")
             .RequireAuthorization();
 
@@ -64,7 +66,7 @@ public static class ZonesEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests);
 
-        return app;
+        return group;
     }
 
     private static async Task<IResult> GetZones(

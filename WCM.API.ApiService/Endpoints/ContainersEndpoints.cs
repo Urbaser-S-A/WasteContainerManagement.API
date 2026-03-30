@@ -1,3 +1,4 @@
+using Asp.Versioning.Builder;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using WCM.API.ApiService.Application.Containers.CreateContainer;
@@ -13,10 +14,11 @@ namespace WCM.API.ApiService.Endpoints;
 
 public static class ContainersEndpoints
 {
-    public static IEndpointRouteBuilder MapContainersEndpoints(this IEndpointRouteBuilder app)
+    public static RouteGroupBuilder MapContainersEndpoints(this IEndpointRouteBuilder app, ApiVersionSet apiVersionSet)
     {
         RouteGroupBuilder group = app
-            .MapGroup("api/v1/containers")
+            .MapGroup("api/v{version:apiVersion}/containers")
+            .WithApiVersionSet(apiVersionSet)
             .WithTags("Containers")
             .RequireAuthorization();
 
@@ -66,7 +68,7 @@ public static class ContainersEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests);
 
-        return app;
+        return group;
     }
 
     private static async Task<IResult> GetContainers(

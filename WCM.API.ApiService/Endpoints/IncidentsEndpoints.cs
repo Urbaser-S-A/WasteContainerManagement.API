@@ -1,3 +1,4 @@
+using Asp.Versioning.Builder;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using WCM.API.ApiService.Application.Incidents.CreateIncident;
@@ -13,10 +14,11 @@ namespace WCM.API.ApiService.Endpoints;
 
 public static class IncidentsEndpoints
 {
-    public static IEndpointRouteBuilder MapIncidentsEndpoints(this IEndpointRouteBuilder app)
+    public static RouteGroupBuilder MapIncidentsEndpoints(this IEndpointRouteBuilder app, ApiVersionSet apiVersionSet)
     {
         RouteGroupBuilder group = app
-            .MapGroup("api/v1/incidents")
+            .MapGroup("api/v{version:apiVersion}/incidents")
+            .WithApiVersionSet(apiVersionSet)
             .WithTags("Incidents")
             .RequireAuthorization();
 
@@ -65,7 +67,7 @@ public static class IncidentsEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests);
 
-        return app;
+        return group;
     }
 
     private static async Task<IResult> GetIncidents(

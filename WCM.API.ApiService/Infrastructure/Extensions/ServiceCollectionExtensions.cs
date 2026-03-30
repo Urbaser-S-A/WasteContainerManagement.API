@@ -26,16 +26,23 @@ namespace WCM.API.ApiService.Infrastructure.Extensions;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds API versioning configuration for Minimal APIs.
+    /// Adds API versioning configuration with Mvc and ApiExplorer support.
     /// </summary>
     public static IServiceCollection AddApiVersioningConfiguration(this IServiceCollection services)
     {
-        services.AddApiVersioning(options =>
-        {
-            options.DefaultApiVersion = new ApiVersion(1, 0);
-            options.AssumeDefaultVersionWhenUnspecified = true;
-            options.ReportApiVersions = true;
-        });
+        services
+            .AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+            })
+            .AddMvc()
+            .AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'V";
+                options.SubstituteApiVersionInUrl = true;
+            });
 
         return services;
     }
@@ -312,6 +319,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<OpenApiInfoTransformer>();
         services.AddSingleton<SecuritySchemeTransformer>();
         services.AddSingleton<XmlCommentsTransformer>();
+
+        // Register version validator to warn if knownVersions array is out of sync
+        services.AddHostedService<ApiVersionValidatorService>();
 
         return services;
     }

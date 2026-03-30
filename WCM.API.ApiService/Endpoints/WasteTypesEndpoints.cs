@@ -1,3 +1,4 @@
+using Asp.Versioning.Builder;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using WCM.API.ApiService.Application.WasteTypes.CreateWasteType;
@@ -12,10 +13,11 @@ namespace WCM.API.ApiService.Endpoints;
 
 public static class WasteTypesEndpoints
 {
-    public static IEndpointRouteBuilder MapWasteTypesEndpoints(this IEndpointRouteBuilder app)
+    public static RouteGroupBuilder MapWasteTypesEndpoints(this IEndpointRouteBuilder app, ApiVersionSet apiVersionSet)
     {
         RouteGroupBuilder group = app
-            .MapGroup("api/v1/waste-types")
+            .MapGroup("api/v{version:apiVersion}/waste-types")
+            .WithApiVersionSet(apiVersionSet)
             .WithTags("WasteTypes")
             .RequireAuthorization();
 
@@ -64,7 +66,7 @@ public static class WasteTypesEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests);
 
-        return app;
+        return group;
     }
 
     private static async Task<IResult> GetWasteTypes(

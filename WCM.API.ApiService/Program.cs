@@ -180,10 +180,13 @@ app.UseOutputCache();
 app.MapDefaultEndpoints();
 
 // 15. API endpoints (Minimal APIs)
-app.MapWasteTypesEndpoints();
-app.MapZonesEndpoints();
-app.MapContainersEndpoints();
-app.MapIncidentsEndpoints();
+// Create a single ApiVersionSet shared across all endpoint groups
+var apiVersionSet = app.CreateDefaultApiVersionSet();
+
+app.MapWasteTypesEndpoints(apiVersionSet);
+app.MapZonesEndpoints(apiVersionSet);
+app.MapContainersEndpoints(apiVersionSet);
+app.MapIncidentsEndpoints(apiVersionSet);
 
 try
 {
