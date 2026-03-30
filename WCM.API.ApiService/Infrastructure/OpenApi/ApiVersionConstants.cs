@@ -10,5 +10,5 @@ internal static class ApiVersionConstants
     /// Known API versions that must be kept in sync with actual API version definitions.
     /// Used by both OpenAPI document registration and validation.
     /// </summary>
-    internal static readonly string[] KnownVersions = ["v1"];
+    internal static readonly string[] KnownVersions = ["v1", "v2"];
 }

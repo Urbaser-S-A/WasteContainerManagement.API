@@ -9,7 +9,7 @@ namespace WCM.API.ApiService.Infrastructure.Extensions;
 internal static class EndpointExtensions
 {
     /// <summary>
-    /// Creates the default API version set with version 1.0 and version reporting enabled.
+    /// Creates the default API version set with all supported versions and version reporting enabled.
     /// </summary>
     /// <param name="app">The endpoint route builder.</param>
     /// <returns>A configured <see cref="ApiVersionSet"/>.</returns>
@@ -17,6 +17,7 @@ internal static class EndpointExtensions
     {
         return app.NewApiVersionSet()
             .HasApiVersion(new ApiVersion(1, 0))
+            .HasApiVersion(new ApiVersion(2, 0))
             .ReportApiVersions()
             .Build();
     }

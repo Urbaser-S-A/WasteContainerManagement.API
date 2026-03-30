@@ -31,6 +31,40 @@ public class WasteTypeRepository(IApplicationDbContext context, ILogger<WasteTyp
             logParameters: isActive.HasValue ? [isActive.Value] : []);
     }
 
+    public async Task<Result<IReadOnlyList<WasteTypeWithContainerCount>>> GetAllWithContainerCountAsync(
+        bool? isActive,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteQueryAsync(
+            async () =>
+            {
+                IQueryable<WasteType> query = Context.WasteTypes.AsNoTracking();
+
+                if (isActive.HasValue)
+                {
+                    query = query.Where(wt => wt.IsActive == isActive.Value);
+                }
+
+                return (IReadOnlyList<WasteTypeWithContainerCount>)await query
+                    .OrderBy(wt => wt.Name)
+                    .Select(wt => new WasteTypeWithContainerCount
+                    {
+                        Id = wt.Id,
+                        Name = wt.Name,
+                        Description = wt.Description,
+                        ColorCode = wt.ColorCode,
+                        IsActive = wt.IsActive,
+                        ActiveContainerCount = Context.Containers
+                            .Count(c => c.WasteTypeId == wt.Id && c.Status == Domain.Enums.ContainerStatus.Active),
+                        CreatedAt = wt.CreatedAt,
+                        UpdatedAt = wt.UpdatedAt
+                    })
+                    .ToListAsync(cancellationToken);
+            },
+            "retrieving all waste types with container count",
+            logParameters: isActive.HasValue ? [isActive.Value] : []);
+    }
+
     public async Task<Result<WasteType?>> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken)
@@ -40,6 +74,31 @@ public class WasteTypeRepository(IApplicationDbContext context, ILogger<WasteTyp
                 .AsNoTracking()
                 .FirstOrDefaultAsync(wt => wt.Id == id, cancellationToken),
             "retrieving waste type by ID",
+            logParameters: [id]);
+    }
+
+    public async Task<Result<WasteTypeWithContainerCount?>> GetByIdWithContainerCountAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteQueryAsync(
+            async () => await Context.WasteTypes
+                .AsNoTracking()
+                .Where(wt => wt.Id == id)
+                .Select(wt => new WasteTypeWithContainerCount
+                {
+                    Id = wt.Id,
+                    Name = wt.Name,
+                    Description = wt.Description,
+                    ColorCode = wt.ColorCode,
+                    IsActive = wt.IsActive,
+                    ActiveContainerCount = Context.Containers
+                        .Count(c => c.WasteTypeId == wt.Id && c.Status == Domain.Enums.ContainerStatus.Active),
+                    CreatedAt = wt.CreatedAt,
+                    UpdatedAt = wt.UpdatedAt
+                })
+                .FirstOrDefaultAsync(cancellationToken),
+            "retrieving waste type by ID with container count",
             logParameters: [id]);
     }
 

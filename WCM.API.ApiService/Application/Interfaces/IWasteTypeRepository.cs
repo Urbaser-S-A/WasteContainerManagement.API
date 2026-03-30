@@ -7,7 +7,11 @@ public interface IWasteTypeRepository
 {
     Task<Result<IReadOnlyList<WasteType>>> GetAllAsync(bool? isActive, CancellationToken cancellationToken);
 
+    Task<Result<IReadOnlyList<WasteTypeWithContainerCount>>> GetAllWithContainerCountAsync(bool? isActive, CancellationToken cancellationToken);
+
     Task<Result<WasteType?>> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<Result<WasteTypeWithContainerCount?>> GetByIdWithContainerCountAsync(Guid id, CancellationToken cancellationToken);
 
     Task<Result<bool>> ExistsByNameAsync(string name, Guid? excludeId, CancellationToken cancellationToken);
 

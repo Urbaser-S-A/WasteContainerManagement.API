@@ -1,10 +1,13 @@
+using Asp.Versioning;
 using Asp.Versioning.Builder;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using WCM.API.ApiService.Application.WasteTypes.CreateWasteType;
 using WCM.API.ApiService.Application.WasteTypes.DeleteWasteType;
 using WCM.API.ApiService.Application.WasteTypes.GetWasteTypeById;
+using WCM.API.ApiService.Application.WasteTypes.GetWasteTypeByIdV2;
 using WCM.API.ApiService.Application.WasteTypes.GetWasteTypes;
+using WCM.API.ApiService.Application.WasteTypes.GetWasteTypesV2;
 using WCM.API.ApiService.Application.WasteTypes.UpdateWasteType;
 using WCM.API.ApiService.Domain.Shared;
 using WCM.API.ApiService.Infrastructure.Extensions;
@@ -21,6 +24,7 @@ public static class WasteTypesEndpoints
             .WithTags("WasteTypes")
             .RequireAuthorization();
 
+        // v1 GET endpoints
         group.MapGet("/", GetWasteTypes)
             .WithName("GetWasteTypes")
             .WithSummary("Retrieves all waste types with optional active filter")
@@ -30,6 +34,7 @@ public static class WasteTypesEndpoints
                 **Optional parameters:**
                 - `isActive` (query): Filter by active/inactive status
                 """)
+            .MapToApiVersion(new ApiVersion(1, 0))
             .Produces<IReadOnlyList<WasteTypeDto>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests)
@@ -44,7 +49,45 @@ public static class WasteTypesEndpoints
                 **Required parameters:**
                 - `id` (route): The waste type unique identifier
                 """)
+            .MapToApiVersion(new ApiVersion(1, 0))
             .Produces<WasteTypeDto>(StatusCodes.Status200OK)
+            .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
+        // v2 GET endpoints (enriched with activeContainerCount)
+        group.MapGet("/", GetWasteTypesV2)
+            .WithName("GetWasteTypesV2")
+            .WithSummary("Retrieves all waste types with active container count")
+            .WithDescription("""
+                Returns a list of waste types enriched with the number of active containers per type.
+
+                **Optional parameters:**
+                - `isActive` (query): Filter by active/inactive status
+
+                **v2 changes:** Response includes `activeContainerCount` field.
+                """)
+            .MapToApiVersion(new ApiVersion(2, 0))
+            .Produces<IReadOnlyList<WasteTypeV2Dto>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
+        group.MapGet("/{id:guid}", GetWasteTypeByIdV2)
+            .WithName("GetWasteTypeByIdV2")
+            .WithSummary("Retrieves a waste type by its ID with active container count")
+            .WithDescription("""
+                Returns a single waste type enriched with the number of active containers.
+
+                **Required parameters:**
+                - `id` (route): The waste type unique identifier
+
+                **v2 changes:** Response includes `activeContainerCount` field.
+                """)
+            .MapToApiVersion(new ApiVersion(2, 0))
+            .Produces<WasteTypeV2Dto>(StatusCodes.Status200OK)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
@@ -174,6 +217,30 @@ public static class WasteTypesEndpoints
     {
         DeleteWasteTypeCommand command = new(id);
         Result result = await sender.Send(command, cancellationToken);
+        return result.ToHttpResult(httpContext);
+    }
+
+    // v2 handlers
+
+    private static async Task<IResult> GetWasteTypesV2(
+        bool? isActive,
+        ISender sender,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        GetWasteTypesV2Query query = new(isActive);
+        Result<IReadOnlyList<WasteTypeV2Dto>> result = await sender.Send(query, cancellationToken);
+        return result.ToHttpResult(httpContext);
+    }
+
+    private static async Task<IResult> GetWasteTypeByIdV2(
+        Guid id,
+        ISender sender,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        GetWasteTypeByIdV2Query query = new(id);
+        Result<WasteTypeV2Dto> result = await sender.Send(query, cancellationToken);
         return result.ToHttpResult(httpContext);
     }
 }
