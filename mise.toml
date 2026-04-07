@@ -1,5 +1,6 @@
 [tools]
 azure-kubelogin = "0.2.15"
+cocogitto = "7.0.0"
 crane = "0.21.2"
 cyclonedx = "0.30.0"
 fnox = "1.17.0"
