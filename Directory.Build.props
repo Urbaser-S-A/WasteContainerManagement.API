@@ -14,6 +14,10 @@
     <!-- Use latest C# language features -->
     <LangVersion>latest</LangVersion>
 
+    <!-- Assembly Version: from RELEASE_VERSION env var (CI) or default (local) -->
+    <Version Condition="'$(RELEASE_VERSION)' != ''">$(RELEASE_VERSION)</Version>
+    <Version Condition="'$(Version)' == ''">0.0.0-dev</Version>
+
     <!-- Deterministic Builds (Critical for CI & Reproducibility) -->
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>

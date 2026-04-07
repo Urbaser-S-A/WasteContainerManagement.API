@@ -1,12 +1,19 @@
 [tools]
 azure-kubelogin = "0.2.15"
 crane = "0.21.2"
+cyclonedx = "0.30.0"
 fnox = "1.17.0"
 helm = "4.1.1"
+java = "zulu-21"
+jreleaser = "1.23.0"
 k9s = "0.50.18"
 kind = "0.31.0"
 kubectl = "1.35.2"
 pnpm = "10.32.1"
+
+[tasks]
+# File-based tasks are auto-discovered from .mise/tasks/
+dir = "{{config_root}}"
 
 [tasks."aspire:run"]
 run = "aspire run -p WCM.API.AppHost"

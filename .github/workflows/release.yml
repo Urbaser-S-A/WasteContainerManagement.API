@@ -1,0 +1,175 @@
+# ============================================
+# Release Workflow
+# ============================================
+# Triggered by semver tags (v1.2.3) or manual dispatch.
+# Mise + JReleaser handle the entire release lifecycle.
+# This workflow is intentionally CI-agnostic — the same
+# `mise run release:jreleaser <version>` works on any CI.
+#
+# Flow: build-test → release (mise: publish + sbom + container + jreleaser) → provenance + attestation
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (without v prefix, e.g. 1.0.0)'
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  #  Job 1: Build & Test
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read       # Checkout the repository
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release
+
+  #  Job 2: Release
+  # Mise orchestrates: publish-all (6 RIDs) → sbom → jreleaser
+  # JReleaser hooks: container build (before release step)
+  # No CI-specific Docker actions — mise task handles QEMU,
+  # buildx, registry login, build, and push.
+  release:
+    name: Release
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # Create GitHub releases and push tags
+      packages: write      # Push container images to GHCR
+      id-token: write      # Cosign keyless signing via Sigstore Fulcio/Rekor
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          cache: false
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "version=${INPUTS_VERSION}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUTS_VERSION: ${{ inputs.version }}
+
+      - name: Release via mise + JReleaser
+        env:
+          JRELEASER_PROJECT_VERSION: ${{ steps.version.outputs.version }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+          STEPS_VERSION_OUTPUTS_VERSION: ${{ steps.version.outputs.version }}
+        run: mise run release:jreleaser ${STEPS_VERSION_OUTPUTS_VERSION}
+
+      - name: Upload JReleaser logs
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: jreleaser-logs
+          path: |
+            out/jreleaser/trace.log
+            out/jreleaser/output.properties
+
+  #  Job 3: SLSA Provenance (L3)
+  provenance:
+    needs: release
+    permissions:
+      actions: read        # Read workflow metadata for provenance generation
+      id-token: write      # OIDC token for SLSA builder identity
+      contents: write      # Upload provenance to the GitHub release
+      attestations: write  # Create attestation artifacts
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@f7dd8c54c2067bafc12ca7a55595d5ee9b75204a # v2.1.0
+    with:
+      base64-subjects-as-file: true
+      upload-assets: true
+      provenance-name: wcm-api-provenance.intoto.jsonl
+
+  #  Job 4: GitHub Artifact Attestation 
+  attestation:
+    name: Artifact Attestation
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write      # OIDC token for attestation signing
+      contents: read       # Checkout the repository
+      attestations: write  # Create attestation artifacts
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          cache: false
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "version=${INPUTS_VERSION}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUTS_VERSION: ${{ inputs.version }}
+
+      - name: Rebuild publish artifacts for attestation
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          STEPS_VERSION_OUTPUTS_VERSION: ${{ steps.version.outputs.version }}
+        run: mise run release:publish-all ${STEPS_VERSION_OUTPUTS_VERSION}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: 'out/publish/**'

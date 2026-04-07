@@ -1,8 +1,11 @@
 [tools]
 azure-kubelogin = "0.2.16"
 crane = "0.21.2"
+cyclonedx = "0.30.0"
 fnox = "1.18.0"
 helm = "4.1.3"
+java = "zulu-21"
+jreleaser = "1.23.0"
 kubectl = "1.35.2"
 pnpm = "10.32.1"
 

@@ -63,3 +63,7 @@ CLAUDE.local.md
 # Mise local env
 mise.local.toml
 mise.local.lock
+
+# Release output
+!.mise/tasks/*
+out/
