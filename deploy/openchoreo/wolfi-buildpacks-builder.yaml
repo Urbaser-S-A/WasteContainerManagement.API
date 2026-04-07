@@ -1,0 +1,218 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterWorkflow
+metadata:
+  name: wolfi-buildpacks-builder
+  labels:
+    openchoreo.dev/workflow-type: component
+  annotations:
+    openchoreo.dev/description: >-
+      Build with Wolfi (Chainguard) buildpacks. Hardened distroless run images,
+      deterministic builds with lockfiles, CycloneDX SBOM generation.
+      Supports Go, Python, Node.js (pnpm), Bun, and .NET.
+      See https://github.com/aechegoyan/buildpacks-wolfi
+spec:
+  externalRefs:
+    - apiVersion: openchoreo.dev/v1alpha1
+      id: git-secret-reference
+      kind: SecretReference
+      name: ${parameters.repository.secretRef}
+  parameters:
+    openAPIV3Schema:
+      required:
+        - repository
+      properties:
+        repository:
+          description: Git repository configuration
+          required:
+            - url
+          properties:
+            url:
+              type: string
+              description: Git repository URL
+              x-openchoreo-component-parameter-repository-url: true
+            revision:
+              default: {}
+              properties:
+                branch:
+                  default: main
+                  type: string
+                  description: Git branch to checkout
+                  x-openchoreo-component-parameter-repository-branch: true
+                commit:
+                  default: ""
+                  type: string
+                  description: Git commit SHA (optional, defaults to latest on branch)
+                  x-openchoreo-component-parameter-repository-commit: true
+              type: object
+            appPath:
+              default: .
+              type: string
+              description: Path to the application directory within the repository
+              x-openchoreo-component-parameter-repository-app-path: true
+            secretRef:
+              default: ""
+              type: string
+              description: SecretReference name for private repo credentials
+              x-openchoreo-component-parameter-repository-secret-ref: true
+          type: object
+        buildEnv:
+          default: []
+          description: >-
+            Build-time environment variables passed to the buildpack.
+            Use BP_DOTNET_VERSION, BP_GO_VERSION, BP_NODE_VERSION, etc. to pin runtime versions.
+          items:
+            properties:
+              name:
+                type: string
+                description: Environment variable name
+              value:
+                type: string
+                description: Environment variable value
+            required:
+              - name
+              - value
+            type: object
+          type: array
+      type: object
+  resources:
+    # ExternalSecret for Git credentials (only when secretRef is set)
+    - id: git-secret
+      includeWhen: ${has(parameters.repository.secretRef) && parameters.repository.secretRef != ""}
+      template:
+        apiVersion: external-secrets.io/v1
+        kind: ExternalSecret
+        metadata:
+          name: ${metadata.workflowRunName}-git-secret
+          namespace: ${metadata.namespace}
+        spec:
+          data: |
+            ${externalRefs['git-secret-reference'].spec.data.map(secret, {
+              "secretKey": secret.secretKey,
+              "remoteRef": {
+                "key": secret.remoteRef.key,
+                "property": has(secret.remoteRef.property) && secret.remoteRef.property != "" ? secret.remoteRef.property : oc_omit()
+              }
+            })}
+          refreshInterval: 15s
+          secretStoreRef:
+            kind: ClusterSecretStore
+            name: azure-kv-store
+          target:
+            creationPolicy: Owner
+            name: ${metadata.workflowRunName}-git-secret
+            template:
+              type: ${externalRefs['git-secret-reference'].spec.template.type}
+    # ExternalSecret for registry push credentials
+    - id: registry-push-secret
+      template:
+        apiVersion: external-secrets.io/v1
+        kind: ExternalSecret
+        metadata:
+          name: ${metadata.workflowRunName}-registry-push-secret
+          namespace: ${metadata.namespace}
+        spec:
+          data:
+            - remoteRef:
+                key: registry-push-secret
+                property: value
+              secretKey: registrysecret
+          refreshInterval: 15s
+          secretStoreRef:
+            kind: ClusterSecretStore
+            name: azure-kv-store
+          target:
+            creationPolicy: Owner
+            name: ${metadata.workflowRunName}-registry-push-secret
+            template:
+              data:
+                .dockerconfigjson: '{{ .registrysecret | toString }}'
+              type: kubernetes.io/dockerconfigjson
+  runTemplate:
+    apiVersion: argoproj.io/v1alpha1
+    kind: Workflow
+    metadata:
+      name: ${metadata.workflowRunName}
+      namespace: ${metadata.namespace}
+    spec:
+      arguments:
+        parameters:
+          - name: component-name
+            value: ${metadata.labels['openchoreo.dev/component']}
+          - name: project-name
+            value: ${metadata.labels['openchoreo.dev/project']}
+          - name: workflowrun-name
+            value: ${metadata.workflowRunName}
+          - name: namespace-name
+            value: ${metadata.namespaceName}
+          - name: git-repo
+            value: ${parameters.repository.url}
+          - name: branch
+            value: ${parameters.repository.revision.branch}
+          - name: commit
+            value: ${parameters.repository.revision.commit}
+          - name: app-path
+            value: ${parameters.repository.appPath}
+          - name: build-env
+            value: ${parameters.buildEnv}
+          - name: image-name
+            value: ${metadata.namespaceName}-${metadata.labels['openchoreo.dev/project']}-${metadata.labels['openchoreo.dev/component']}
+          - name: image-tag
+            value: v1
+          - name: git-secret
+            value: ${metadata.workflowRunName}-git-secret
+          - name: registry-push-secret
+            value: ${metadata.workflowRunName}-registry-push-secret
+          - name: builder-image
+            value: acrurbaserocdp897.azurecr.io/buildpacks-wolfi/builder-dotnet:latest
+      entrypoint: build-workflow
+      serviceAccountName: workflow-sa
+      templates:
+        - name: build-workflow
+          steps:
+            - - name: checkout-source
+                templateRef:
+                  clusterScope: true
+                  name: checkout-source
+                  template: checkout
+            - - name: build-image
+                arguments:
+                  parameters:
+                    - name: git-revision
+                      value: "{{steps.checkout-source.outputs.parameters.git-revision}}"
+                templateRef:
+                  clusterScope: true
+                  name: wolfi-buildpacks-build
+                  template: build-image
+            - - name: publish-image
+                arguments:
+                  parameters:
+                    - name: git-revision
+                      value: "{{steps.checkout-source.outputs.parameters.git-revision}}"
+                templateRef:
+                  clusterScope: true
+                  name: publish-image
+                  template: publish-image
+            - - name: generate-workload-cr
+                arguments:
+                  parameters:
+                    - name: image
+                      value: "{{steps.publish-image.outputs.parameters.image}}"
+                    - name: run-name
+                      value: "{{workflow.parameters.workflowrun-name}}"
+                templateRef:
+                  clusterScope: true
+                  name: generate-workload
+                  template: generate-workload-cr
+      volumeClaimTemplates:
+        - metadata:
+            name: workspace
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 2Gi
+  ttlAfterCompletion: 1d
+  workflowPlaneRef:
+    kind: ClusterWorkflowPlane
+    name: default

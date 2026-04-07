@@ -1,7 +1,7 @@
 apiVersion: openchoreo.dev/v1alpha1
 kind: ClusterComponentType
 metadata:
-  name: deployment/service-subdomain
+  name: service-subdomain
   annotations:
     openchoreo.dev/display-name: "service-subdomain"
     openchoreo.dev/description: >-
@@ -20,6 +20,8 @@ spec:
     name: dockerfile-builder
   - kind: ClusterWorkflow
     name: ballerina-buildpack-builder
+  - kind: ClusterWorkflow
+    name: wolfi-buildpacks-builder
   environmentConfigs:
     openAPIV3Schema:
       $defs:
