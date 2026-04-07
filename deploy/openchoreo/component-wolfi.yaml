@@ -1,0 +1,28 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: wcm-api-wolfi
+  namespace: default
+  annotations:
+    openchoreo.dev/display-name: "WCM API (Wolfi Buildpacks)"
+    openchoreo.dev/description: "Source build using Wolfi/Chainguard distroless buildpacks"
+spec:
+  owner:
+    projectName: urb-wcm-api
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service-subdomain
+  autoDeploy: true
+  workflow:
+    kind: ClusterWorkflow
+    name: wolfi-buildpacks-builder
+    parameters:
+      repository:
+        url: "https://github.com/Urbaser-S-A/WasteContainerManagement.API"
+        revision:
+          branch: "main"
+        appPath: "/"
+        secretRef: github-wcm-api
+      buildEnv:
+        - name: BP_DOTNET_VERSION
+          value: "10"
