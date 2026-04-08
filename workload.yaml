@@ -13,7 +13,7 @@ endpoints:
 configurations:
   env:
     - name: ASPNETCORE_ENVIRONMENT
-      value: "Production"
+      value: "LocalDevelopment"
     - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
       value: "true"
     - name: AllowedHosts
