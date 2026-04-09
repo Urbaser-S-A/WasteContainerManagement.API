@@ -1,0 +1,30 @@
+[_]
+schema-version = "0.2"
+
+[io.buildpacks]
+exclude = [
+    "deploy/",
+    "scripts/",
+    "docs/",
+    "dist/",
+    "WCM.API.AppHost/",
+    "WCM.API.Tests/",
+    ".git/",
+    ".github/",
+    ".mise/",
+    ".vscode/",
+    ".vs/",
+    "Containerfile*",
+    "Dockerfile*",
+    "workload.yaml",
+    "mise.toml",
+    "mise.lock",
+    "*.md",
+    ".gitignore",
+    ".editorconfig",
+    ".globalconfig",
+]
+
+[[io.buildpacks.build.env]]
+name = "BP_DOTNET_PROJECT_PATH"
+value = "WCM.API.ApiService"
