@@ -26,3 +26,5 @@ spec:
       buildEnv:
         - name: BP_DOTNET_VERSION
           value: "10"
+        - name: BP_DOTNET_PROJECT_PATH
+          value: "WCM.API.ApiService"
