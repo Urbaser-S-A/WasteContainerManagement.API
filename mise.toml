@@ -10,6 +10,7 @@ jreleaser = "1.23.0"
 k9s = "0.50.18"
 kind = "0.31.0"
 kubectl = "1.35.2"
+pack = "0.40.2"
 pnpm = "10.32.1"
 
 [tasks]
