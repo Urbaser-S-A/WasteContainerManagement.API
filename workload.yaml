@@ -21,6 +21,11 @@ configurations:
       value: "*"
     - name: HTTP_PORTS
       value: "8080"
+    # External base path the gateway serves this app under (it strips the prefix before
+    # forwarding). Makes OpenAPI `servers` and generated URLs include it so Scalar "try it"
+    # and API clients call the correct path. Overridden by an X-Forwarded-Prefix header if sent.
+    - name: EXTERNAL_BASE_PATH
+      value: "/wcm-api-http"
     # Embedded SQLite database — no external database or cloud dependency.
     # Stored under a writable path; data is ephemeral (lost on pod restart)
     # until a persistent-volume trait is attached.

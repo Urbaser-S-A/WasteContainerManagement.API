@@ -79,6 +79,28 @@ using (IServiceScope scope = app.Services.CreateScope())
     await DatabaseSeeder.SeedAsync(dbContext, logger);
 }
 
+// Honor the reverse-proxy base path. The OpenChoreo gateway serves this app under a sub-path
+// (e.g. "/wcm-api-http") and strips it before forwarding, so the app runs at the root but must
+// generate URLs (OpenAPI `servers`, the Scalar spec URL, links) that include the prefix.
+// Prefer the gateway's X-Forwarded-Prefix header; fall back to the EXTERNAL_BASE_PATH setting.
+string? configuredBasePath = app.Configuration["EXTERNAL_BASE_PATH"];
+app.Use(async (context, next) =>
+{
+    string? prefix = context.Request.Headers["X-Forwarded-Prefix"].FirstOrDefault();
+    if (string.IsNullOrWhiteSpace(prefix))
+    {
+        prefix = configuredBasePath;
+    }
+
+    string trimmed = (prefix ?? string.Empty).Trim('/');
+    if (trimmed.Length > 0)
+    {
+        context.Request.PathBase = new PathString("/" + trimmed);
+    }
+
+    await next();
+});
+
 // OpenAPI and Scalar UI - enabled in LocalDevelopment and AzureDevelopment only
 if (app.Environment.IsEnvironment("LocalDevelopment") || app.Environment.IsEnvironment("AzureDevelopment"))
 {
