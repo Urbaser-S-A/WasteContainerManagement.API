@@ -35,9 +35,6 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) =>
 // Load secrets.json if it exists (local development only)
 builder.Configuration.AddUserSecrets<Program>(optional: true);
 
-// Load configuration from Azure Key Vault using managed identity
-builder.Configuration.AddAzureKeyVaultWithManagedIdentity(builder.Environment);
-
 // .NET Aspire services for observability
 builder.AddServiceDefaults();
 
@@ -70,45 +67,16 @@ builder.Services.AddOutputCaching();
 
 var app = builder.Build();
 
-// Auto-apply database scripts (idempotent - each script checks __EFMigrationsHistory internally)
+// Ensure the SQLite database schema exists and seed reference data (both idempotent)
 using (IServiceScope scope = app.Services.CreateScope())
 {
     ApplicationDbContext dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     ILogger<Program> logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    string scriptsDir = Path.Combine(AppContext.BaseDirectory, "scripts");
-    bool useWorkloadIdentity = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_CLIENT_ID"));
+    logger.LogInformation("Ensuring database schema is created...");
+    await dbContext.Database.EnsureCreatedAsync();
 
-    if (useWorkloadIdentity)
-    {
-        logger.LogInformation("Workload identity detected. Skipping automatic database scripts (managed DB)");
-    }
-    else if (Directory.Exists(scriptsDir))
-    {
-        string[] scriptFiles = Directory.GetFiles(scriptsDir, "*.sql");
-        Array.Sort(scriptFiles, StringComparer.Ordinal);
-
-        foreach (string scriptPath in scriptFiles)
-        {
-            string fileName = Path.GetFileName(scriptPath);
-            try
-            {
-                logger.LogInformation("Executing database script {Script}...", fileName);
-                string sql = await File.ReadAllTextAsync(scriptPath);
-                await dbContext.Database.ExecuteSqlRawAsync(sql);
-                logger.LogInformation("Database script {Script} executed successfully", fileName);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to execute database script {Script}", fileName);
-                throw;
-            }
-        }
-    }
-    else
-    {
-        logger.LogWarning("Scripts directory not found at {ScriptsDir}. Skipping automatic database setup", scriptsDir);
-    }
+    await DatabaseSeeder.SeedAsync(dbContext, logger);
 }
 
 // OpenAPI and Scalar UI - enabled in LocalDevelopment and AzureDevelopment only

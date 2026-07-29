@@ -1,13 +1,10 @@
 using Asp.Versioning;
-using Azure.Core;
-using Azure.Identity;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
-using Npgsql;
 using WCM.API.ApiService.Application.Behaviors;
 using WCM.API.ApiService.Application.Interfaces;
 using WCM.API.ApiService.Infrastructure.Middleware;
@@ -95,7 +92,9 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Adds Entity Framework Core DbContext with PostgreSQL, retry policy, pooling, and query optimization.
+    /// Adds Entity Framework Core DbContext backed by an embedded SQLite database.
+    /// The connection string comes from configuration ("ConnectionStrings:wcmdb"); when absent,
+    /// it defaults to a file under a writable directory so the app is self-contained with no external database.
     /// </summary>
     public static IServiceCollection AddApplicationDbContext(
         this IServiceCollection services,
@@ -103,61 +102,32 @@ public static class ServiceCollectionExtensions
         IWebHostEnvironment environment)
     {
         string? connectionString = configuration.GetConnectionString("wcmdb");
-        bool useWorkloadIdentity = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_CLIENT_ID"));
 
-        if (useWorkloadIdentity)
+        if (string.IsNullOrWhiteSpace(connectionString))
         {
-            var credential = new DefaultAzureCredential();
-            var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
-            dataSourceBuilder.UsePeriodicPasswordProvider(async (_, ct) =>
-            {
-                var token = await credential.GetTokenAsync(
-                    new TokenRequestContext(["https://ossrdbms-aad.database.windows.net/.default"]), ct);
-                return token.Token;
-            }, TimeSpan.FromMinutes(55), TimeSpan.FromSeconds(0));
-
-            var dataSource = dataSourceBuilder.Build();
-            services.AddSingleton(dataSource);
-
-            services.AddDbContext<ApplicationDbContext>((sp, options) =>
-            {
-                options.UseNpgsql(sp.GetRequiredService<NpgsqlDataSource>(), npgsqlOptions =>
-                {
-                    npgsqlOptions.CommandTimeout(30);
-                    npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 3,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null);
-                    npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-                });
-
-                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-            });
+            // Default to a writable local SQLite file when no connection string is provided.
+            // The container image runs as a non-root user, so a directory under /tmp is a safe writable location.
+            string dataDirectory = Environment.GetEnvironmentVariable("SQLITE_DATA_DIR") ?? "/tmp/wcm-api";
+            Directory.CreateDirectory(dataDirectory);
+            connectionString = $"Data Source={Path.Combine(dataDirectory, "wcm.db")}";
         }
-        else
+
+        services.AddDbContext<ApplicationDbContext>(options =>
         {
-            services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlite(connectionString, sqliteOptions =>
             {
-                options.UseNpgsql(connectionString, npgsqlOptions =>
-                {
-                    npgsqlOptions.CommandTimeout(30);
-                    npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 3,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null);
-                    npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-                });
-
-                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-
-                if (environment.IsEnvironment("LocalDevelopment"))
-                {
-                    options.EnableSensitiveDataLogging();
-                    options.EnableDetailedErrors();
-                    options.LogTo(Console.WriteLine, LogLevel.Information);
-                }
+                sqliteOptions.CommandTimeout(30);
             });
-        }
+
+            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+
+            if (environment.IsEnvironment("LocalDevelopment"))
+            {
+                options.EnableSensitiveDataLogging();
+                options.EnableDetailedErrors();
+                options.LogTo(Console.WriteLine, LogLevel.Information);
+            }
+        });
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 

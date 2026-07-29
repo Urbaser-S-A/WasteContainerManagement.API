@@ -2,11 +2,11 @@ apiVersion: openchoreo.dev/v1alpha1
 kind: Workload
 metadata:
   name: wcm-api-buildpacks-workload
-  namespace: default
+  namespace: urbaser
 spec:
   owner:
     componentName: wcm-api-buildpacks
-    projectName: urb-wcm-api
+    projectName: urbaser
   endpoints:
     http:
       type: HTTP
@@ -24,9 +24,6 @@ spec:
         value: "*"
       - key: HTTP_PORTS
         value: "8080"
+      # Embedded SQLite — no external database or cloud dependency.
       - key: ConnectionStrings__wcmdb
-        value: "Host=pg-opench.postgres.database.azure.com;Port=5432;Username=wcm-api-identity;Database=wcmdb;SSL Mode=require"
-      - key: AZURE_CLIENT_ID
-        value: "fda04deb-cc9a-4918-813d-aad0ff6073b6"
-      - key: PGGSSENCMODE
-        value: "disable"
+        value: "Data Source=/tmp/wcm-api/wcm.db"

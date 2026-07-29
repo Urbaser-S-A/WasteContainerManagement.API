@@ -2,13 +2,13 @@ apiVersion: openchoreo.dev/v1alpha1
 kind: Component
 metadata:
   name: wcm-api-buildpacks
-  namespace: default
+  namespace: urbaser
   annotations:
     openchoreo.dev/display-name: "WCM API (Buildpacks)"
     openchoreo.dev/description: "Source build using Paketo .NET buildpack"
 spec:
   owner:
-    projectName: urb-wcm-api
+    projectName: urbaser
   componentType:
     kind: ClusterComponentType
     name: deployment/service-subdomain

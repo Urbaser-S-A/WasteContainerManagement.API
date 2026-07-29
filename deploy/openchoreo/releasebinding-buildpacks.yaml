@@ -1,13 +1,13 @@
 apiVersion: openchoreo.dev/v1alpha1
 kind: ReleaseBinding
 metadata:
-  name: wcm-api-buildpacks-development
-  namespace: default
+  name: wcm-api-buildpacks-dev
+  namespace: urbaser
 spec:
   owner:
-    projectName: urb-wcm-api
+    projectName: urbaser
     componentName: wcm-api-buildpacks
-  environment: development
+  environment: dev
   componentTypeEnvironmentConfigs:
     replicas: 1
     resources:
@@ -17,4 +17,3 @@ spec:
       limits:
         cpu: 500m
         memory: 512Mi
-    azureWorkloadIdentityClientId: "fda04deb-cc9a-4918-813d-aad0ff6073b6"

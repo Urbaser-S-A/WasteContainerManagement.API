@@ -12,6 +12,7 @@ endpoints:
 
 configurations:
   env:
+    # LocalDevelopment keeps auth bypassed and enables the OpenAPI/Scalar UI.
     - name: ASPNETCORE_ENVIRONMENT
       value: "LocalDevelopment"
     - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
@@ -20,9 +21,8 @@ configurations:
       value: "*"
     - name: HTTP_PORTS
       value: "8080"
+    # Embedded SQLite database — no external database or cloud dependency.
+    # Stored under a writable path; data is ephemeral (lost on pod restart)
+    # until a persistent-volume trait is attached.
     - name: ConnectionStrings__wcmdb
-      value: "Host=pg-opench.postgres.database.azure.com;Port=5432;Username=wcm-api-identity;Database=wcmdb;SSL Mode=require"
-    - name: AZURE_CLIENT_ID
-      value: "fda04deb-cc9a-4918-813d-aad0ff6073b6"
-    - name: PGGSSENCMODE
-      value: "disable"
+      value: "Data Source=/tmp/wcm-api/wcm.db"

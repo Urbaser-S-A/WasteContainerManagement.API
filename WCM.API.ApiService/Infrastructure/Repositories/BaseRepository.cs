@@ -1,4 +1,4 @@
-using Npgsql;
+using System.Data.Common;
 using WCM.API.ApiService.Domain.Shared;
 using WCM.API.ApiService.Infrastructure.Persistence;
 
@@ -32,12 +32,12 @@ public abstract class BaseRepository
 
             return Result.Success(result);
         }
-        catch (NpgsqlException ex) when (ex.InnerException is TimeoutException || ex.SqlState == "57014")
+        catch (DbException ex) when (ex.InnerException is TimeoutException || ex.SqlState == "57014")
         {
             LogError(ex, "Database timeout while {OperationName}", operationName, logParameters);
             return Result.Failure<T>(DomainErrors.Database.Timeout);
         }
-        catch (NpgsqlException ex)
+        catch (DbException ex)
         {
             Logger.LogError(ex,
                 "Database error while {OperationName}: SqlState={SqlState}, Message={ErrorMessage}, Context={@LogParameters}",
@@ -68,12 +68,12 @@ public abstract class BaseRepository
 
             return Result.Success();
         }
-        catch (NpgsqlException ex) when (ex.InnerException is TimeoutException || ex.SqlState == "57014")
+        catch (DbException ex) when (ex.InnerException is TimeoutException || ex.SqlState == "57014")
         {
             LogError(ex, "Database timeout while {OperationName}", operationName, logParameters);
             return Result.Failure(DomainErrors.Database.Timeout);
         }
-        catch (NpgsqlException ex)
+        catch (DbException ex)
         {
             Logger.LogError(ex,
                 "Database error while {OperationName}: SqlState={SqlState}, Message={ErrorMessage}, Context={@LogParameters}",

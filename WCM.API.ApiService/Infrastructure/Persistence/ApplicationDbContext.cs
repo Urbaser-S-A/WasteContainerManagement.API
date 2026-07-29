@@ -27,14 +27,32 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         DateTime utcNow = DateTime.UtcNow;
 
+        // Ids and audit timestamps are generated in application code so the model stays
+        // provider-agnostic (no database-specific SQL defaults such as gen_random_uuid() / now()).
         foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry in ChangeTracker.Entries())
         {
             if (entry.State == EntityState.Added)
             {
-                if (entry.Entity is WasteType wt) wt.CreatedAt = utcNow;
-                else if (entry.Entity is Zone z) z.CreatedAt = utcNow;
-                else if (entry.Entity is Container c) c.CreatedAt = utcNow;
-                else if (entry.Entity is Incident i) { i.CreatedAt = utcNow; i.ReportedAt = utcNow; }
+                switch (entry.Entity)
+                {
+                    case WasteType wt:
+                        if (wt.Id == Guid.Empty) wt.Id = Guid.CreateVersion7();
+                        wt.CreatedAt = utcNow;
+                        break;
+                    case Zone z:
+                        if (z.Id == Guid.Empty) z.Id = Guid.CreateVersion7();
+                        z.CreatedAt = utcNow;
+                        break;
+                    case Container c:
+                        if (c.Id == Guid.Empty) c.Id = Guid.CreateVersion7();
+                        c.CreatedAt = utcNow;
+                        break;
+                    case Incident i:
+                        if (i.Id == Guid.Empty) i.Id = Guid.CreateVersion7();
+                        i.CreatedAt = utcNow;
+                        i.ReportedAt = utcNow;
+                        break;
+                }
             }
 
             if (entry.State == EntityState.Modified)
@@ -54,15 +72,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<WasteType>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
 
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.ColorCode).HasMaxLength(7);
 
             entity.HasIndex(e => e.Name).IsUnique();
-
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 
@@ -71,15 +86,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Zone>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
 
             entity.Property(e => e.Name).IsRequired().HasMaxLength(150);
             entity.Property(e => e.District).HasMaxLength(150);
             entity.Property(e => e.City).HasMaxLength(150);
 
             entity.HasIndex(e => e.Name).IsUnique();
-
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 
@@ -88,7 +100,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Container>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
 
             entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Address).HasMaxLength(300);
@@ -111,8 +122,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany(z => z.Containers)
                 .HasForeignKey(e => e.ZoneId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 
@@ -121,7 +130,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Incident>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
 
             entity.Property(e => e.Description).HasMaxLength(1000);
 
@@ -146,9 +154,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany(c => c.Incidents)
                 .HasForeignKey(e => e.ContainerId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
-            entity.Property(e => e.ReportedAt).HasDefaultValueSql("now() at time zone 'utc'");
         });
     }
 }

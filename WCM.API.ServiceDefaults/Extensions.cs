@@ -1,5 +1,3 @@
-using Azure.Identity;
-using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,30 +56,13 @@ public static class Extensions
 
     private static IHostApplicationBuilder AddOpenTelemetryExporters(this IHostApplicationBuilder builder)
     {
+        // Telemetry is exported via OTLP to whatever collector the platform provides
+        // (e.g. the OpenChoreo observability plane) through OTEL_EXPORTER_OTLP_ENDPOINT.
         bool useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 
         if (useOtlpExporter)
         {
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
-        }
-
-        // Azure Monitor: Enabled only in Azure environments (not LocalDevelopment)
-        // Development: Telemetry goes to Aspire Dashboard via OTLP only
-        // Azure environments: Use Managed Identity with AAD authentication (passwordless)
-        //
-        // Prerequisites in Azure:
-        // 1. System-assigned Managed Identity enabled on App Service
-        // 2. Environment variable: APPLICATIONINSIGHTS_CONNECTION_STRING
-        // 3. Environment variable: APPLICATIONINSIGHTS_AUTHENTICATION_STRING=Authorization=AAD
-        // 4. IAM role "Monitoring Metrics Publisher" assigned to Managed Identity
-        if (!builder.Environment.IsEnvironment("LocalDevelopment")
-            && !string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
-        {
-            builder.Services.AddOpenTelemetry()
-                .UseAzureMonitor(options =>
-                {
-                    options.Credential = new DefaultAzureCredential();
-                });
         }
 
         return builder;
