@@ -272,7 +272,6 @@ public static class ServiceCollectionExtensions
             services.AddOpenApi(version, options =>
             {
                 options.AddDocumentTransformer<OpenApiInfoTransformer>();
-                options.AddDocumentTransformer<SecuritySchemeTransformer>();
                 options.AddDocumentTransformer<XmlCommentsTransformer>();
 
                 options.AddOperationTransformer<WasteTypesExamplesTransformer>();
@@ -296,7 +295,6 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<OpenApiInfoTransformer>();
-        services.AddSingleton<SecuritySchemeTransformer>();
         services.AddSingleton<XmlCommentsTransformer>();
 
         // Register version validator to warn if knownVersions array is out of sync

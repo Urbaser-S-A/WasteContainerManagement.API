@@ -10,27 +10,31 @@ namespace WCM.API.ApiService.Infrastructure.Extensions;
 public static class AuthenticationExtensions
 {
     /// <summary>
-    /// Configures authentication using a development scheme that authenticates every request.
-    /// The application no longer depends on Azure Entra ID. Replace this with a real identity
-    /// provider (JWT/OIDC) when one is available for the target environment.
+    /// Configures the API to require no authentication. A development scheme is still registered
+    /// so the authentication/authorization middleware has a scheme to run, and the authorization
+    /// policy allows every request (including anonymous). Wire in a real identity provider
+    /// (JWT/OIDC) here when one is available for the target environment.
     /// </summary>
     public static IServiceCollection AddAuthenticationConfiguration(
         this IServiceCollection services,
         IConfiguration configuration,
         IWebHostEnvironment environment)
     {
-        // Bypass authentication: DevelopmentAuthenticationHandler authenticates all requests.
-        // Endpoints still call RequireAuthorization(), which the fallback policy satisfies.
         services.AddAuthentication("DevelopmentScheme")
             .AddScheme<AuthenticationSchemeOptions, DevelopmentAuthenticationHandler>(
                 "DevelopmentScheme",
                 options => { });
 
+        // Open policy: authorize every request, including anonymous ones. This makes any
+        // RequireAuthorization() and the fallback policy pass without a token.
+        AuthorizationPolicy allowAnonymous = new AuthorizationPolicyBuilder()
+            .RequireAssertion(_ => true)
+            .Build();
+
         services.AddAuthorization(options =>
         {
-            options.FallbackPolicy = new AuthorizationPolicyBuilder()
-                .RequireAuthenticatedUser()
-                .Build();
+            options.DefaultPolicy = allowAnonymous;
+            options.FallbackPolicy = allowAnonymous;
         });
 
         return services;
