@@ -108,8 +108,17 @@ public static class ServiceCollectionExtensions
             // Default to a writable local SQLite file when no connection string is provided.
             // The container image runs as a non-root user, so a directory under /tmp is a safe writable location.
             string dataDirectory = Environment.GetEnvironmentVariable("SQLITE_DATA_DIR") ?? "/tmp/wcm-api";
-            Directory.CreateDirectory(dataDirectory);
             connectionString = $"Data Source={Path.Combine(dataDirectory, "wcm.db")}";
+        }
+
+        // Ensure the SQLite file's parent directory exists, whether the connection string came
+        // from configuration or the default above. Without this, SQLite fails to open the file
+        // ("unable to open database file") when the target directory does not yet exist.
+        var sqliteConnectionBuilder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(connectionString);
+        string? databaseDirectory = Path.GetDirectoryName(sqliteConnectionBuilder.DataSource);
+        if (!string.IsNullOrEmpty(databaseDirectory))
+        {
+            Directory.CreateDirectory(databaseDirectory);
         }
 
         services.AddDbContext<ApplicationDbContext>(options =>
